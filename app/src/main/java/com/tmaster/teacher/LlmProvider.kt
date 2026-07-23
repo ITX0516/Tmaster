@@ -17,7 +17,7 @@ interface LlmProvider {
      * @return 文本内容 + 可能的工具调用
      */
     suspend fun chat(
-        messages: List<Map<String, Any>>,
+        messages: List<Map<String, Any?>>,
         tools: List<ToolDef>? = null,
         imageBase64: String? = null,
     ): LlmResponse

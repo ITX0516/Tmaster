@@ -27,7 +27,7 @@ class ConversationManager(
     private val maxToolRounds: Int = 5,
 ) {
     private val logger = ModuleLogger("ConvMgr")
-    private val history = mutableListOf<Map<String, Any>>()
+    private val history = mutableListOf<Map<String, Any?>>()
 
     /** 清空对话历史。 */
     fun reset() {
@@ -58,8 +58,7 @@ class ConversationManager(
         for (round in 0..maxToolRounds) {
             val tools = toolRegistry.toToolDefs()
             val response = provider.chat(
-                @Suppress("UNCHECKED_CAST")
-                messages = history.toList() as List<Map<String, Any>>,
+                messages = history.toList(),
                 tools = if (tools.isNotEmpty()) tools else null,
             )
 
