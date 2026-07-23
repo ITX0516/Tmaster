@@ -1,0 +1,14 @@
+name: analysis_core
+description: Go AI analysis engine — Hawk-Eye analyzer, engine abstraction, problem-move detection.
+version: 0.1.0
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  go_board:
+    path: ../go_board
+
+dev_dependencies:
+  test: ^1.24.0
+  lints: ^4.0.0

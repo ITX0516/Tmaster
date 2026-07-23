@@ -1,0 +1,10 @@
+name: go_board
+description: Go board logic engine — rules, captures, scoring, game tree navigation.
+version: 0.1.0
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dev_dependencies:
+  test: ^1.24.0
+  lints: ^4.0.0
