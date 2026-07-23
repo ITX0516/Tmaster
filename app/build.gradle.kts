@@ -61,7 +61,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
+    kotlin {
+        compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
+    }
     buildFeatures { compose = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
 
@@ -72,7 +74,6 @@ android {
             version = "3.22.1"
         }
     }
-    ndk { abiFilters += listOf("arm64-v8a") }
 }
 
 dependencies {
