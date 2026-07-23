@@ -22,21 +22,21 @@ add_library(
 # 否则仅编译我们的 JNI 桥 (KATAGO_REAL 未定义时返回错误)。
 
 file(GLOB KATAGO_SOURCES
-    katago/core/*.cpp
-    katago/game/*.cpp
-    katago/neuralnet/*.cpp
-    katago/search/*.cpp
-    katago/command/*.cpp
-    katago/dataio/*.cpp
-    katago/program/*.cpp
-    katago/tests/*.cpp
+    katago/cpp/core/*.cpp
+    katago/cpp/game/*.cpp
+    katago/cpp/neuralnet/*.cpp
+    katago/cpp/search/*.cpp
+    katago/cpp/command/*.cpp
+    katago/cpp/dataio/*.cpp
+    katago/cpp/program/*.cpp
+    katago/cpp/tests/*.cpp
 )
 list(FILTER KATAGO_SOURCES EXCLUDE REGEX ".*_test\\.cpp$")
 
 if(KATAGO_SOURCES)
     message(STATUS "KataGo sources found: ${KATAGO_SOURCES}")
     target_sources(katago-bridge PRIVATE ${KATAGO_SOURCES})
-    target_include_directories(katago-bridge PRIVATE katago)
+    target_include_directories(katago-bridge PRIVATE katago/cpp)
     target_compile_definitions(katago-bridge PRIVATE KATAGO_REAL)
 
     # Eigen3
@@ -46,8 +46,8 @@ if(KATAGO_SOURCES)
         target_compile_definitions(katago-bridge PRIVATE USE_EIGEN)
     endif()
 else()
-    message(WARNING "KataGo sources not found in katago/ — engine will report error.")
-    message(WARNING "Run build_katago_android.sh to clone KataGo into katago/")
+    message(WARNING "KataGo sources not found — engine will report error.")
+    message(WARNING "Run scripts/build_katago_android.sh to clone KataGo")
 endif()
 
 find_library(log-lib log)

@@ -1,48 +1,37 @@
 #!/bin/bash
-# ── KataGo 源码获取脚本 ───────────────────────────────────
-# Clone KataGo 源码到 app/src/main/cpp/katago/，
-# 然后 CMakeLists.txt 会检测到源码并与 JNI 桥一起编译为单个 .so。
-#
-# 用法:
-#   chmod +x build_katago_android.sh
-#   ./build_katago_android.sh
-#
-# Android APK 编译时会自动把 KataGo + bridge 编译到一起。
+# ── 获取 KataGo 源码 (含 tclap 子模块) ────────────────────
+# 直接克隆到 app/src/main/cpp/katago/
+# CI 每次都是干净环境，不走缓存
 
 set -e
 
 KATAGO_VERSION="v1.16.5"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BUILD_DIR="$REPO_ROOT/build/katago-source"
 KATAGO_DEST="$REPO_ROOT/app/src/main/cpp/katago"
 
-echo "=== Tmaster: Fetching KataGo Sources ==="
-echo "Version: $KATAGO_VERSION"
-echo "Dest:    $KATAGO_DEST"
+echo "=== Fetching KataGo $KATAGO_VERSION ==="
 
-# ── 1. Clone KataGo ───────────────────────────────────────
-mkdir -p "$BUILD_DIR"
-cd "$BUILD_DIR"
+# 清空旧目录
+rm -rf "$KATAGO_DEST"
 
-if [ ! -d "KataGo" ]; then
-    echo "Cloning KataGo $KATAGO_VERSION..."
-    git clone --branch "$KATAGO_VERSION" --depth 1 --recurse-submodules \
-        https://github.com/lightvector/KataGo.git
-else
-    echo "KataGo already cloned, updating submodules..."
-    cd KataGo
-    git submodule update --init --recursive
-    cd ..
+# 直接克隆到目标位置 (含 submodules)
+git clone --branch "$KATAGO_VERSION" --depth 1 --recurse-submodules \
+    https://github.com/lightvector/KataGo.git \
+    "$KATAGO_DEST"
+
+# 验证 tclap 是否下载成功
+if [ ! -f "$KATAGO_DEST/cpp/command/tclap/CmdLine.h" ]; then
+    echo "ERROR: tclap submodule not found!"
+    echo "Trying manual init..."
+    cd "$KATAGO_DEST"
+    git submodule update --init --recursive --force
+    cd "$REPO_ROOT"
 fi
 
-# ── 2. 复制源码到项目 ─────────────────────────────────────
-rm -rf "$KATAGO_DEST"
-mkdir -p "$(dirname "$KATAGO_DEST")"
-cp -r "$BUILD_DIR/KataGo/cpp" "$KATAGO_DEST"
+# 验证关键文件
+echo "=== Verifying ==="
+ls "$KATAGO_DEST/cpp/command/tclap/CmdLine.h" && echo "tclap: OK"
+ls "$KATAGO_DEST/cpp/core/main.cpp" && echo "KataGo core: OK"
 
-echo "=== SUCCESS ==="
-echo "KataGo sources at: $KATAGO_DEST/cpp"
-echo ""
-echo "Next: Build APK with Android Studio or ./gradlew assembleDebug"
-echo "CMakeLists.txt will detect KataGo sources and compile everything into katago-bridge.so"
+echo "=== SUCCESS: KataGo sources ready ==="
