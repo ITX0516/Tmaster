@@ -32,8 +32,9 @@ if [ ! -d "KataGo" ]; then
 fi
 
 # ── 2. 复制源码到项目 ─────────────────────────────────────
-rm -rf "$KATAGO_DEST/cpp"
-cp -r "$BUILD_DIR/KataGo/cpp" "$KATAGO_DEST/cpp"
+rm -rf "$KATAGO_DEST"
+mkdir -p "$(dirname "$KATAGO_DEST")"
+cp -r "$BUILD_DIR/KataGo/cpp" "$KATAGO_DEST"
 
 echo "=== SUCCESS ==="
 echo "KataGo sources at: $KATAGO_DEST/cpp"
