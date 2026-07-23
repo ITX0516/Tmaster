@@ -64,7 +64,8 @@ cmake . -B build-android \
     -DBUILD_TESTING=OFF \
     -DBUILD_DISTRIBUTED=OFF \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS="-O3 -DNDEBUG -fopenmp -static-openmp"
+    -DCMAKE_CXX_FLAGS="-O3 -DNDEBUG" \
+    ${EIGEN3_INCLUDE_DIR:+-DEigen3_DIR="$EIGEN3_INCLUDE_DIR"}
 
 # ── 4. 编译 ───────────────────────────────────────────────
 cmake --build build-android --target katago -j$(nproc)
