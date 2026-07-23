@@ -58,7 +58,8 @@ class ConversationManager(
         for (round in 0..maxToolRounds) {
             val tools = toolRegistry.toToolDefs()
             val response = provider.chat(
-                messages = history.toList(),
+                @Suppress("UNCHECKED_CAST")
+                messages = history.toList() as List<Map<String, Any>>,
                 tools = if (tools.isNotEmpty()) tools else null,
             )
 
