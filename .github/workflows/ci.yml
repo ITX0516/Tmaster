@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  analyze:
+    name: Dart Analyze & Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package:
+          - packages/go_board
+          - packages/sgf_parser
+          - packages/analysis_core
+          - packages/llm_agent
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Resolve dependencies
+        working-directory: ${{ matrix.package }}
+        run: dart pub get
+
+      - name: Static analysis
+        working-directory: ${{ matrix.package }}
+        run: dart analyze
+
+      - name: Run tests
+        working-directory: ${{ matrix.package }}
+        run: dart test
+
+  # ── Flutter build — activated once app/ is populated ──────────────
+  # build-android:
+  #   name: Build Android APK
+  #   runs-on: ubuntu-latest
+  #   needs: analyze
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: subosito/flutter-action@v2
+  #       with:
+  #         flutter-version: '3.24'
+  #     - run: flutter pub get
+  #       working-directory: app
+  #     - run: flutter build apk --release
+  #       working-directory: app
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: android-apk
+  #         path: app/build/app/outputs/flutter-apk/app-release.apk
