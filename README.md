@@ -1,79 +1,59 @@
-# Tmaster — 手机围棋AI教练
+# Tmaster — 手机围棋 AI 教练
 
-## 项目概述
-
-一款移动端围棋软件，集成本地/远程 AI 引擎（KataGo、Leela Zero），搭配 LLM 智能体作为围棋老师，提供从分析到教学的全流程体验。
+KataGo + LLM 驱动的新一代围棋学习工具。KataGo 是事实裁判，LLM 是讲棋老师。
 
 ## 核心能力
 
 | 功能 | 说明 |
 |------|------|
-| AI 对弈 | 本地 KataGo / Leela Zero，离线可用；支持远程 GPU 算力 |
-| 鹰眼分析 | 全谱分析：问题手、好手、AI 重合度 |
-| AI 老师 | LLM 智能体，不是固定模板，可以调用工具进行个性化教学 |
-| 多模态讲棋 | 棋盘截图 + KataGo 数据 + 知识卡 + 学生画像 → LLM 生成教学 |
-| SGF 支持 | 导入/导出，继续对局 |
-| 3 种落子 | 单击、双击、确认按钮 |
+| AI 对弈 | 本地 KataGo（15b/8b 两档），离线可用；远程 GPU 算力 |
+| 鹰眼全谱分析 | 问题手、好手、AI 重合度 — 逐手对照 KataGo 推荐 |
+| AI 老师 | LLM 智能体，工具调用，非固定模板，个性化教学 |
+| 多模态讲棋 | 棋盘截图 + KataGo JSON + 知识卡 + 学生画像 → LLM |
+| 类 Lizzie 体验 | 加载自动分析、暂停/继续、手数切换即分析 |
+| SGF 支持 | 导入/导出，变招树，继续对局 |
+| 3 种落子 | 单击 / 双击 / 确认按钮 |
+| 让子 + 计时 | 标准让子位置 + 读秒/包干/加拿大式 |
 
-## 技术选型
+## 技术栈
 
-- **移动端**: Flutter (Dart) — 跨平台 + 高性能棋盘渲染
-- **AI 引擎**: KataGo C++ → ARM 编译 (NDK) + FFI 桥接
-- **远程计算**: gRPC stream 连接云 GPU / 个人电脑
-- **LLM 集成**: 多模态 provider 抽象层，支持 OpenAI / Anthropic / 本地模型
-- **本地存储**: SQLite (游戏记录、学生画像、知识卡)
-- **棋盘逻辑**: 纯 Dart 实现 (零依赖)
+```
+语言:    Kotlin
+UI:      Jetpack Compose + Canvas
+引擎:    KataGo C++ → NDK → JNI → GTP 协议
+远程:    gRPC stream → 智星云 / 算云 / 个人电脑
+LLM:     ConversationManager + Tool Registry (参考 GoAgent)
+本地DB:  Room (SQLite)
+模型:    15 block (默认) + 8 block (低配回退)
+```
 
 ## 项目结构
 
 ```
 Tmaster/
-├── packages/                    # 独立 Dart 包（按依赖分层）
-│   ├── go_board/                # 围棋规则引擎
-│   ├── sgf_parser/              # SGF 解析/序列化
-│   ├── analysis_core/           # AI 引擎接口 + 鹰眼分析
-│   └── llm_agent/               # LLM 智能体框架
-│
-├── app/                         # Flutter 移动端应用
-│   └── lib/
-│       ├── core/                # DI, 配置, 主题, 工具
-│       ├── domain/              # 实体, 值对象, 用例, 仓库接口
-│       ├── data/                # 数据层实现 (DB, API, 文件)
-│       ├── engine/              # 引擎层 (本地/远程实现)
-│       └── presentation/        # UI 层 (棋盘, 分析, 对弈, 教学)
-│
-├── native/                      # 原生引擎绑定
-│   ├── katago/                  # KataGo JNI 桥接
-│   └── leela_zero/              # Leela Zero JNI 桥接
-│
-└── docs/                        # 文档
-    └── architecture.md
+├── app/src/main/java/com/tmaster/
+│   ├── engine/          ← GTP 协议 + KataGo JNI + 远程引擎 + 模型管理
+│   ├── game/            ← 棋盘状态 + SGF 解析 + 让子 + 计时器
+│   ├── analysis/        ← 鹰眼分析器 + 问题手/好手检测
+│   ├── teacher/         ← LLM Provider + Tool Registry + ConversationManager
+│   ├── data/            ← Room 数据库 + Repository
+│   ├── ui/              ← Compose: 棋盘 / 对弈 / 分析 / AI老师 / 棋谱库
+│   ├── log/             ← 统一日志系统
+│   └── error/           ← 异常分类 + 用户友好报错
+├── .github/workflows/   ← CI: Android APK 构建
+└── README.md
 ```
 
 ## 数据流
 
 ```
-SGF 文件 → sgf_parser → BoardState
-                            ↓
-     ┌─→ GoEngine.analyze() → AnalysisResult
-     │         ↓
-     │   HawkEyeAnalyzer → GameAnalysisSummary
-     │         ↓
-     │   AgentContext (board image + analysis + knowledge + profile)
-     │         ↓
-     └─→ GoTeacherAgent.teach() → Stream<String> (教学文本)
-```
-
-## 包依赖关系
-
-```
-go_board (无依赖)
-  ↑
-sgf_parser → go_board
-  ↑
-analysis_core → go_board
-  ↑
-llm_agent → go_board + analysis_core
-  ↑
-app → go_board + sgf_parser + analysis_core + llm_agent
+SGF → BoardState → KataGo.analyze() → AnalysisResult
+                        ↓
+              HawkEyeAnalyzer
+                        ↓
+          GameAnalysis (问题手 + 好手 + AI 重合度)
+                        ↓
+          ConversationManager (棋盘截图 + 分析 + 知识卡 + 学生画像)
+                        ↓
+          AI 老师 → 流式教学文本
 ```
