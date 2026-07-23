@@ -40,39 +40,42 @@ object EngineManager {
     suspend fun setup(context: Context, boardSize: Int = 19, komi: Double = 6.5) {
         if (_state.value == State.READY) return
         _state.value = State.INITIALIZING
+        _errorMsg.value = null
 
         try {
-            // 1. 配置路径
             configPath = copyDefaultConfig(context)
+            logger.i("config ready: $configPath")
 
-            // 2. 尝试 15b
             val modelMgr = ModelManager(context)
-            val modelToUse = if (modelMgr.canRun15b()) "15b" else "8b"
-            logger.i("selecting model: $modelToUse")
-
-            try {
-                modelPath = modelMgr.selectModel(modelToUse)
-            } catch (e: TmasterException.ModelDownloadFailed) {
-                if (modelToUse == "15b") {
-                    logger.w("15b download failed, falling back to 8b")
-                    modelPath = modelMgr.selectModel("8b")
-                } else throw e
+            var modelLoaded = false
+            for (modelId in listOf("15b", "8b")) {
+                try {
+                    _state.value = State.DOWNLOADING
+                    modelPath = modelMgr.selectModel(modelId)
+                    modelLoaded = true
+                    logger.i("model $modelId ready")
+                    break
+                } catch (e: TmasterException.ModelDownloadFailed) {
+                    logger.w("$modelId download failed: ${e.message}")
+                }
+            }
+            if (!modelLoaded) {
+                throw TmasterException.ModelNotLoaded(
+                    "无法下载模型，请检查网络连接",
+                )
             }
 
-            // 3. 初始化引擎
-            engine = LocalKataGo(
-                modelPath = modelPath!!,
-                configPath = configPath!!,
-            )
+            _state.value = State.INITIALIZING
+            engine = LocalKataGo(modelPath = modelPath!!, configPath = configPath!!)
             engine!!.initialize(boardSize, komi)
 
             _state.value = State.READY
-            logger.i("engine ready (${modelMgr.currentModel.value?.name})")
+            logger.i("engine ready: ${modelMgr.currentModel.value?.name}")
         } catch (e: Exception) {
             _state.value = State.ERROR
-            _errorMsg.value = e.message
+            _errorMsg.value = e.message ?: "未知错误"
+            logger.e("engine setup failed: ${e.message}")
             ErrorReporter.report(e, "engine setup")
-            throw e
         }
     }
 

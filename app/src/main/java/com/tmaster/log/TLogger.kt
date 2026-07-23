@@ -6,20 +6,25 @@ object TLogger {
     var minLevel: LogLevel = LogLevel.VERBOSE
 
     fun v(tag: String, msg: String) {
+        LogCollector.add(tag, "V", msg)
         if (minLevel.priority <= LogLevel.VERBOSE.priority) Log.v(tag, msg)
     }
     fun d(tag: String, msg: String) {
+        LogCollector.add(tag, "D", msg)
         if (minLevel.priority <= LogLevel.DEBUG.priority) Log.d(tag, msg)
     }
     fun i(tag: String, msg: String) {
+        LogCollector.add(tag, "I", msg)
         if (minLevel.priority <= LogLevel.INFO.priority) Log.i(tag, msg)
     }
     fun w(tag: String, msg: String, t: Throwable? = null) {
+        LogCollector.add(tag, "W", msg)
         if (minLevel.priority <= LogLevel.WARN.priority) {
             if (t != null) Log.w(tag, msg, t) else Log.w(tag, msg)
         }
     }
     fun e(tag: String, msg: String, t: Throwable? = null) {
+        LogCollector.add(tag, "E", msg)
         if (t != null) Log.e(tag, msg, t) else Log.e(tag, msg)
     }
 }

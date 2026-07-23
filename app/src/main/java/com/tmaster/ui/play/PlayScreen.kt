@@ -2,160 +2,235 @@ package com.tmaster.ui.play
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tmaster.engine.EngineManager
 import com.tmaster.game.Coord
 import com.tmaster.game.StoneColor
+import com.tmaster.log.LogCollector
 import com.tmaster.ui.board.BoardOverlay
 import com.tmaster.ui.board.GoBoard
 import com.tmaster.ui.theme.BoardTheme
-import com.tmaster.ui.theme.WinRateBar
 
+/** 参考 Ah Q 围棋风格: 棋盘为主, 极简控制栏 */
 @Composable
 fun PlayScreen(viewModel: PlayViewModel = viewModel()) {
     val boardState by viewModel.boardState.collectAsState()
+    val engineState by viewModel.engineState.collectAsState()
     val aiThinking by viewModel.aiThinking.collectAsState()
     val message by viewModel.message.collectAsState()
-    val engineState by viewModel.engineState.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        // 状态栏
-        StatusBar(
+    when (engineState) {
+        EngineManager.State.ERROR -> EngineErrorScreen(
+            error = viewModel.engineError,
+            onRetry = { viewModel.retryEngine() },
+        )
+        else -> GameLayout(
             boardState = boardState,
-            aiThinking = aiThinking,
             engineState = engineState,
-            message = message,
-        )
-
-        // 棋盘
-        GoBoard(
-            state = boardState,
-            boardTheme = BoardTheme.CLASSIC,
-            overlay = BoardOverlay(),
-            onTap = { viewModel.onUserTap(it) },
-            modifier = Modifier.padding(horizontal = 6.dp),
-        )
-
-        // 控制按钮
-        ControlBar(
             aiThinking = aiThinking,
-            currentPlayer = boardState.currentPlayer,
-            aiColor = viewModel.aiColor,
-            onPass = { viewModel.onPass() },
-            onUndo = { viewModel.undo() },
-            onResign = { viewModel.resign() },
-            onNewGame = { viewModel.newGame() },
+            message = message,
+            onTap = viewModel::onUserTap,
+            onPass = viewModel::onPass,
+            onUndo = viewModel::undo,
+            onResign = viewModel::resign,
+            onNewGame = viewModel::newGame,
         )
     }
 }
 
-@Composable
-private fun StatusBar(
-    boardState: com.tmaster.game.BoardState,
-    aiThinking: Boolean,
-    engineState: EngineManager.State,
-    message: String?,
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // 引擎状态
-            val statusText = when (engineState) {
-                EngineManager.State.IDLE -> "引擎未启动"
-                EngineManager.State.DOWNLOADING -> "下载模型中..."
-                EngineManager.State.INITIALIZING -> "引擎初始化..."
-                EngineManager.State.READY -> "KataGo 就绪"
-                EngineManager.State.ERROR -> "引擎异常"
-            }
-            val statusColor = when (engineState) {
-                EngineManager.State.READY -> com.tmaster.ui.theme.GoodGreen
-                EngineManager.State.ERROR -> MaterialTheme.colorScheme.error
-                else -> MaterialTheme.colorScheme.onSurfaceVariant
-            }
-            Text(
-                text = statusText,
-                color = statusColor,
-                style = MaterialTheme.typography.labelSmall,
-            )
+// ── 引擎错误界面 ──────────────────────────────────────────
 
-            // 当前落子方
-            if (engineState == EngineManager.State.READY) {
-                val playerText = when {
-                    aiThinking -> "AI 思考中..."
-                    boardState.currentPlayer == StoneColor.BLACK -> "黑方"
-                    else -> "白方"
-                }
-                Text(playerText, style = MaterialTheme.typography.labelSmall)
+@Composable
+private fun EngineErrorScreen(error: String?, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text("引擎未就绪", style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(16.dp))
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = error ?: "未知错误",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "需要先编译 KataGo 引擎:\n\n" +
+                        "1. 运行 scripts/build_katago_android.sh\n" +
+                        "2. 或下载 GitHub Actions 的 katago-sources artifact\n" +
+                        "3. 放到 app/src/main/cpp/katago/ 目录\n" +
+                        "4. 重新编译 APK",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
-    }
-
-    // 消息提示
-    if (message != null) {
-        Text(
-            text = message,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
-        )
+        Spacer(Modifier.height(24.dp))
+        Button(onClick = onRetry) { Text("重试") }
     }
 }
 
+// ── 棋盘布局 ──────────────────────────────────────────────
+
 @Composable
-private fun ControlBar(
+private fun GameLayout(
+    boardState: com.tmaster.game.BoardState,
+    engineState: EngineManager.State,
     aiThinking: Boolean,
-    currentPlayer: StoneColor,
-    aiColor: StoneColor,
+    message: String?,
+    onTap: (Coord) -> Unit,
     onPass: () -> Unit,
     onUndo: () -> Unit,
     onResign: () -> Unit,
     onNewGame: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+    Column(
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
     ) {
-        Button(
-            onClick = onPass,
-            enabled = !aiThinking && currentPlayer != aiColor,
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        ) { Text("Pass") }
+        // 顶部状态
+        TopBar(engineState, aiThinking, boardState.currentPlayer)
 
-        OutlinedButton(
-            onClick = onUndo,
-            enabled = !aiThinking,
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-        ) { Text("撤销") }
+        // 消息条
+        if (message != null) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.errorContainer,
+            ) {
+                Text(
+                    text = message,
+                    modifier = Modifier.padding(8.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
+        }
 
-        OutlinedButton(
-            onClick = onResign,
-            enabled = !aiThinking,
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-        ) { Text("认输") }
+        // 棋盘 (占满可用空间)
+        GoBoard(
+            state = boardState,
+            boardTheme = BoardTheme.CLASSIC,
+            overlay = BoardOverlay(),
+            onTap = onTap,
+            modifier = Modifier.padding(4.dp),
+        )
 
-        OutlinedButton(
-            onClick = onNewGame,
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-        ) { Text("新局") }
+        // 底部控制
+        BottomBar(
+            aiThinking = aiThinking,
+            engineReady = engineState == EngineManager.State.READY,
+            currentPlayer = boardState.currentPlayer,
+            moveCount = boardState.moveCount,
+            onPass = onPass,
+            onUndo = onUndo,
+            onResign = onResign,
+            onNewGame = onNewGame,
+        )
+    }
+}
+
+@Composable
+private fun TopBar(engineState: EngineManager.State, aiThinking: Boolean, currentPlayer: StoneColor) {
+    var showLog by remember { mutableStateOf(false) }
+    val logs by LogCollector.lines.collectAsState()
+
+    Column {
+        Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceVariant) {
+            Row(
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val (status, color) = when (engineState) {
+                    EngineManager.State.IDLE -> "等待启动" to MaterialTheme.colorScheme.onSurfaceVariant
+                    EngineManager.State.INITIALIZING -> "初始化中..." to MaterialTheme.colorScheme.onSurfaceVariant
+                    EngineManager.State.READY -> "KataGo 就绪" to com.tmaster.ui.theme.GoodGreen
+                    EngineManager.State.ERROR -> "引擎异常" to MaterialTheme.colorScheme.error
+                    EngineManager.State.DOWNLOADING -> "下载模型中..." to MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                Text(status, style = MaterialTheme.typography.labelSmall, color = color)
+
+                val turn = when {
+                    aiThinking -> "AI 思考中..."
+                    currentPlayer == StoneColor.BLACK -> "黑方落子"
+                    else -> "白方落子"
+                }
+                Text(turn, style = MaterialTheme.typography.labelSmall)
+
+                TextButton(onClick = { showLog = !showLog }) {
+                    Text("日志", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
+        if (showLog) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(120.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+            ) {
+                LazyColumn(
+                    modifier = Modifier.padding(4.dp),
+                ) {
+                    items(logs.size) { i ->
+                        Text(
+                            text = logs[logs.size - 1 - i],
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(vertical = 1.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BottomBar(
+    aiThinking: Boolean,
+    engineReady: Boolean,
+    currentPlayer: StoneColor,
+    moveCount: Int,
+    onPass: () -> Unit,
+    onUndo: () -> Unit,
+    onResign: () -> Unit,
+    onNewGame: () -> Unit,
+) {
+    Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceVariant) {
+        Row(
+            modifier = Modifier.padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("$moveCount 手", style = MaterialTheme.typography.bodySmall)
+
+            TextButton(
+                onClick = onUndo,
+                enabled = !aiThinking && moveCount > 0,
+            ) { Text("撤销") }
+
+            TextButton(
+                onClick = onPass,
+                enabled = !aiThinking,
+            ) { Text("Pass") }
+
+            TextButton(
+                onClick = onResign,
+                enabled = !aiThinking,
+            ) { Text("认输") }
+
+            TextButton(onClick = onNewGame) { Text("新局") }
+        }
     }
 }

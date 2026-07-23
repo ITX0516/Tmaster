@@ -46,6 +46,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message
 
+    private val _engineError = MutableStateFlow<String?>(null)
+    val engineError: StateFlow<String?> = _engineError
+
     init {
         // 同步引擎状态
         viewModelScope.launch {
@@ -59,7 +62,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                         aiMove()
                     }
                 } else if (state == EngineManager.State.ERROR) {
-                    _message.value = "引擎启动失败: ${EngineManager.errorMsg.value}"
+                    _engineError.value = EngineManager.errorMsg.value ?: "引擎启动失败"
+                    _message.value = _engineError.value
                 }
             }
         }
@@ -71,12 +75,19 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     private fun initializeEngine() {
         viewModelScope.launch {
             _message.value = "正在启动引擎..."
+            _engineError.value = null
             try {
                 EngineManager.setup(getApplication(), boardSize, komi)
             } catch (e: Exception) {
-                _message.value = "引擎启动失败: ${e.message}"
+                _engineError.value = e.message ?: "未知错误"
+                _message.value = _engineError.value
             }
         }
+    }
+
+    fun retryEngine() {
+        _engineError.value = null
+        initializeEngine()
     }
 
     /** 用户落子 */
