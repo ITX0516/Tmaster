@@ -16,18 +16,15 @@ echo "=== Fetching KataGo $KATAGO_VERSION ==="
 rm -rf "$KATAGO_DEST"
 
 # 直接克隆到目标位置 (含 submodules)
-git clone --branch "$KATAGO_VERSION" --depth 1 --recurse-submodules \
+git clone --branch "$KATAGO_VERSION" --depth 1 \
     https://github.com/lightvector/KataGo.git \
     "$KATAGO_DEST"
 
-# 验证 tclap 是否下载成功
-if [ ! -f "$KATAGO_DEST/cpp/command/tclap/CmdLine.h" ]; then
-    echo "ERROR: tclap submodule not found!"
-    echo "Trying manual init..."
-    cd "$KATAGO_DEST"
-    git submodule update --init --recursive --force
-    cd "$REPO_ROOT"
-fi
+# 单独下载 tclap (shallow clone + submodules 不兼容)
+TCLAP_DIR="$KATAGO_DEST/cpp/command/tclap"
+rm -rf "$TCLAP_DIR"
+git clone --depth 1 https://github.com/lightvector/tclap.git "$TCLAP_DIR"
+rm -rf "$TCLAP_DIR/.git"
 
 # 验证关键文件
 echo "=== Verifying ==="
