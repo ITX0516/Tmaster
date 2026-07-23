@@ -29,10 +29,11 @@ fun PlayScreen(viewModel: PlayViewModel = viewModel()) {
     val engineState by viewModel.engineState.collectAsState()
     val aiThinking by viewModel.aiThinking.collectAsState()
     val message by viewModel.message.collectAsState()
+    val engineError by viewModel.engineError.collectAsState()
 
     when (engineState) {
         EngineManager.State.ERROR -> EngineErrorScreen(
-            error = viewModel.engineError,
+            error = engineError,
             onRetry = { viewModel.retryEngine() },
         )
         else -> GameLayout(
