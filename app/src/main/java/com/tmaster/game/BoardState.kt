@@ -128,6 +128,7 @@ class BoardState private constructor(
                 when (g[ni]) {
                     null -> liberties++
                     color -> if (ni !in visited) stack.add(n)
+                    else -> {} // other color, not traversed
                 }
             }
         }

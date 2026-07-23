@@ -27,7 +27,7 @@ class RemoteEngine(
         private set
 
     override suspend fun initialize(boardSize: Int, komi: Double) {
-        logger.i { "connecting to remote engine at ${config.host}:${config.port}" }
+        logger.i("connecting to remote engine at ${config.host}:${config.port}")
         isReady = true
         // TODO: gRPC handshake + auth with config.token
         throw TmasterException.RemoteConnectionFailed(

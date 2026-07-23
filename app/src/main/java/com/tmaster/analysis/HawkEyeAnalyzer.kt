@@ -25,7 +25,7 @@ class HawkEyeAnalyzer(
 
     /** 分析完整对局 — 逐手调用引擎，返回汇总。 */
     suspend fun analyzeGame(initialState: BoardState): GameAnalysis {
-        logger.i { "starting full game analysis (${initialState.moveCount} moves)" }
+        logger.i("starting full game analysis (${initialState.moveCount} moves)")
 
         val analyses = mutableListOf<AnalysisResult>()
         val problems = mutableListOf<ProblemMove>()
@@ -58,7 +58,7 @@ class HawkEyeAnalyzer(
                 }
             }
 
-            if (i % 20 == 0) logger.d { "analyzed move $i/${initialState.moveCount}" }
+            if (i % 20 == 0) logger.d("analyzed move $i/${initialState.moveCount}")
         }
 
         problems.forEach { totalLoss += it.winRateLoss }

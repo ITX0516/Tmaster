@@ -54,9 +54,9 @@ class ModelManager(private val context: Context) {
         val file = File(modelDir, "${model.id}.bin.gz")
 
         if (!file.exists()) {
-            logger.i { "downloading model ${model.name} (${model.sizeMb}MB)" }
+            logger.i("downloading model ${model.name} (${model.sizeMb}MB)")
             downloadModel(model.url, file)
-            logger.i { "model ${model.name} downloaded" }
+            logger.i("model ${model.name} downloaded")
         }
 
         _currentModel.value = model
@@ -71,7 +71,7 @@ class ModelManager(private val context: Context) {
             if (file.exists()) {
                 val info = availableModels.find { it.id == model }
                 _currentModel.value = info
-                logger.i { "using model: ${info?.name}" }
+                logger.i("using model: ${info?.name}")
                 return@withContext file.absolutePath
             }
         }
@@ -114,7 +114,7 @@ class ModelManager(private val context: Context) {
         // 检查磁盘空间
         val usableSpace = modelDir.usableSpace / (1024 * 1024)
         if (usableSpace < 100) {
-            logger.w { "low storage: ${usableSpace}MB remaining" }
+            logger.w("low storage: ${usableSpace}MB remaining")
         }
     }
 }

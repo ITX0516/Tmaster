@@ -171,7 +171,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 _message.value = null
             } catch (e: Exception) {
                 _message.value = "AI 出错: ${e.message}"
-                logger.e { "AI move failed: ${e.message}" }
+                logger.e("AI move failed: ${e.message}")
             } finally {
                 _aiThinking.value = false
             }

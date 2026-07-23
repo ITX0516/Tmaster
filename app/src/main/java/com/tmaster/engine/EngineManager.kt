@@ -48,13 +48,13 @@ object EngineManager {
             // 2. 尝试 15b
             val modelMgr = ModelManager(context)
             val modelToUse = if (modelMgr.canRun15b()) "15b" else "8b"
-            logger.i { "selecting model: $modelToUse" }
+            logger.i("selecting model: $modelToUse")
 
             try {
                 modelPath = modelMgr.selectModel(modelToUse)
             } catch (e: TmasterException.ModelDownloadFailed) {
                 if (modelToUse == "15b") {
-                    logger.w { "15b download failed, falling back to 8b" }
+                    logger.w("15b download failed, falling back to 8b")
                     modelPath = modelMgr.selectModel("8b")
                 } else throw e
             }
@@ -67,7 +67,7 @@ object EngineManager {
             engine!!.initialize(boardSize, komi)
 
             _state.value = State.READY
-            logger.i { "engine ready (${modelMgr.currentModel.value?.name})" }
+            logger.i("engine ready (${modelMgr.currentModel.value?.name})")
         } catch (e: Exception) {
             _state.value = State.ERROR
             _errorMsg.value = e.message

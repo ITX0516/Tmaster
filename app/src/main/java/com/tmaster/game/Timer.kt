@@ -1,8 +1,10 @@
 package com.tmaster.game
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 /**
  * 计时规则类型。
@@ -43,21 +45,24 @@ class GameTimer(private val config: TimerConfig) {
     val state: StateFlow<TimerState> = _state
 
     private var running = false
+    private var job: kotlinx.coroutines.Job? = null
 
-    suspend fun start() {
+    fun start(scope: kotlinx.coroutines.CoroutineScope) {
         running = true
-        _state.value = _state.value.copy(isRunning = true, activePlayer = StoneColor.BLACK)
-        while (running) {
-            delay(100)
-            val s = _state.value
-            val player = s.activePlayer ?: continue
-            val newTime = if (player == StoneColor.BLACK) s.blackTimeMs - 100 else s.whiteTimeMs - 100
-            if (newTime <= 0) {
-                handleTimeout(player)
-                break
+        job = scope.launch {
+            _state.value = _state.value.copy(isRunning = true, activePlayer = StoneColor.BLACK)
+            while (running) {
+                delay(100)
+                val s = _state.value
+                val player = s.activePlayer ?: continue
+                val newTime = if (player == StoneColor.BLACK) s.blackTimeMs - 100 else s.whiteTimeMs - 100
+                if (newTime <= 0) {
+                    handleTimeout(player)
+                    break
+                }
+                _state.value = if (player == StoneColor.BLACK) s.copy(blackTimeMs = newTime)
+                else s.copy(whiteTimeMs = newTime)
             }
-            _state.value = if (player == StoneColor.BLACK) s.copy(blackTimeMs = newTime)
-            else s.copy(whiteTimeMs = newTime)
         }
     }
 

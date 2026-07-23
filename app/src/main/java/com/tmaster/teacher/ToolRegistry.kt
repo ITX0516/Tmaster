@@ -13,7 +13,7 @@ class ToolRegistry {
 
     fun register(tool: RegisteredTool) {
         tools[tool.name] = tool
-        logger.d { "registered tool: ${tool.name}" }
+        logger.d("registered tool: ${tool.name}")
     }
 
     fun get(name: String): RegisteredTool? = tools[name]

@@ -13,12 +13,12 @@ object ErrorReporter {
     fun report(ex: Throwable, context: String = "") {
         when (ex) {
             is TmasterException -> {
-                logger.e { "[${ex.code}] $context → ${ex.message}" }
+                logger.e("[${ex.code}] $context → ${ex.message}")
                 onError?.invoke(ex)
             }
             else -> {
-                logger.e { "UNEXPECTED $context → ${ex.message}" }
-                logger.e { ex.stackTraceToString() }
+                logger.e("UNEXPECTED $context → ${ex.message}")
+                logger.e(ex.stackTraceToString())
             }
         }
     }

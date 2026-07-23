@@ -33,7 +33,7 @@ class ConversationManager(
     fun reset() {
         history.clear()
         history.add(mapOf("role" to "system", "content" to systemPrompt))
-        logger.d { "conversation reset" }
+        logger.d("conversation reset")
     }
 
     /**
@@ -64,7 +64,7 @@ class ConversationManager(
 
             // Token 统计
             if (response.usage != null) {
-                logger.d { "tokens: ${response.usage.totalTokens} (prompt=${response.usage.promptTokens})" }
+                logger.d("tokens: ${response.usage.totalTokens} (prompt=${response.usage.promptTokens})")
             }
 
             // LLM 想调用工具
@@ -77,7 +77,7 @@ class ConversationManager(
                         try {
                             tool.execute(tc.arguments)
                         } catch (e: Exception) {
-                            logger.e { "tool ${tc.name} error: ${e.message}" }
+                            logger.e("tool ${tc.name} error: ${e.message}")
                             "Error: ${e.message}"
                         }
                     } else {

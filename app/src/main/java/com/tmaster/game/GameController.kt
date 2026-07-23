@@ -19,7 +19,7 @@ class GameController(initialState: BoardState) {
         val current = _state.value
         val next = current.play(coord)
         if (next == null) {
-            logger.d { "invalid move: $coord (${current.currentPlayer})" }
+            logger.d("invalid move: $coord (${current.currentPlayer})")
             return false
         }
         _state.value = next
@@ -44,5 +44,5 @@ class GameController(initialState: BoardState) {
     }
 
     fun pauseTimer() = timer?.pause()
-    fun resumeTimer() = timer?.start()
+    fun resumeTimer(scope: kotlinx.coroutines.CoroutineScope) = timer?.start(scope)
 }

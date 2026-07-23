@@ -45,7 +45,7 @@ class LocalKataGo(
 
     override suspend fun initialize(boardSize: Int, komi: Double) {
         if (initialized) return
-        logger.i { "initializing local KataGo (board=$boardSize, threads=$threads)" }
+        logger.i("initializing local KataGo (board=$boardSize, threads=$threads)")
 
         try {
             val ok = nativeInit(modelPath, configPath, boardSize)
@@ -58,17 +58,17 @@ class LocalKataGo(
 
             initialized = true
             isReady = true
-            logger.i { "KataGo initialized successfully" }
+            logger.i("KataGo initialized successfully")
         } catch (e: TmasterException) {
             // 15b 失败 → 尝试 8b
             if (modelPath.contains("15b")) {
-                logger.w { "15b model failed, falling back to 8b" }
+                logger.w("15b model failed, falling back to 8b")
                 ErrorReporter.report(e, "15b init failed")
                 // 外部会重新用 8b 模型路径调用 initialize
             }
             throw e
         } catch (e: Exception) {
-            logger.e { "KataGo init failed: ${e.message}" }
+            logger.e("KataGo init failed: ${e.message}")
             throw TmasterException.EngineCrashed(-1, e.message ?: "")
         }
     }
@@ -122,7 +122,7 @@ class LocalKataGo(
         nativeDestroy()
         initialized = false
         isReady = false
-        logger.i { "KataGo disposed" }
+        logger.i("KataGo disposed")
     }
 
     // ── 内部方法 ──────────────────────────────────────────────
@@ -136,9 +136,9 @@ class LocalKataGo(
     }
 
     private fun sendGtp(cmd: String): GtpResponse {
-        logger.d { "GTP → $cmd" }
+        logger.d("GTP → $cmd")
         val raw = nativeSend(cmd)
-        logger.d { "GTP ← $raw" }
+        logger.d("GTP ← $raw")
         return GtpProtocol.parseResponse(raw)
     }
 
@@ -178,7 +178,7 @@ class LocalKataGo(
                 isDuringSearch = root.optBoolean("isDuringSearch", true),
             )
         } catch (e: Exception) {
-            logger.e { "parse analysis failed: ${e.message}" }
+            logger.e("parse analysis failed: ${e.message}")
             KataAnalysisResult(
                 moveInfos = emptyList(), rootWinRate = 0.5,
                 rootScoreLead = 0.0, totalVisits = 0, isDuringSearch = true,

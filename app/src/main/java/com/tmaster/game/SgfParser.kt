@@ -86,7 +86,7 @@ class SgfParser(private val input: String) {
 
 data class SgfProperty(val name: String, val values: List<String>)
 
-data class SgfNode(
+class SgfNode(
     val properties: Map<String, SgfProperty> = emptyMap(),
     val children: List<SgfNode> = emptyList(),
 ) {
