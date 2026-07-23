@@ -143,14 +143,47 @@ class LocalKataGo(
     }
 
     private fun parseAnalysis(rawJson: String): KataAnalysisResult {
-        // TODO: 用 Moshi/KotlinX 完整反序列化
-        return KataAnalysisResult(
-            moveInfos = emptyList(),
-            rootWinRate = 0.5,
-            rootScoreLead = 0.0,
-            totalVisits = 0,
-            isDuringSearch = true,
+        if (rawJson.isBlank()) return KataAnalysisResult(
+            moveInfos = emptyList(), rootWinRate = 0.5,
+            rootScoreLead = 0.0, totalVisits = 0, isDuringSearch = true,
         )
+        return try {
+            val root = org.json.JSONObject(rawJson)
+            val rootInfo = root.optJSONObject("rootInfo")
+            val infos = root.optJSONArray("moveInfos")
+            val moveInfos = mutableListOf<KataMoveInfo>()
+            if (infos != null) {
+                for (i in 0 until infos.length()) {
+                    val info = infos.getJSONObject(i)
+                    val pvArr = info.optJSONArray("pv")
+                    val pv = mutableListOf<String>()
+                    if (pvArr != null) {
+                        for (j in 0 until pvArr.length()) pv.add(pvArr.getString(j))
+                    }
+                    moveInfos.add(KataMoveInfo(
+                        move = info.optString("move", ""),
+                        visits = info.optInt("visits", 0),
+                        winRate = info.optDouble("winrate", 0.5),
+                        scoreLead = info.optDouble("scoreLead", 0.0),
+                        order = info.optInt("order", i),
+                        pv = pv,
+                    ))
+                }
+            }
+            KataAnalysisResult(
+                moveInfos = moveInfos,
+                rootWinRate = rootInfo?.optDouble("winrate", 0.5) ?: 0.5,
+                rootScoreLead = rootInfo?.optDouble("scoreLead", 0.0) ?: 0.0,
+                totalVisits = rootInfo?.optInt("visits", 0) ?: 0,
+                isDuringSearch = root.optBoolean("isDuringSearch", true),
+            )
+        } catch (e: Exception) {
+            logger.e { "parse analysis failed: ${e.message}" }
+            KataAnalysisResult(
+                moveInfos = emptyList(), rootWinRate = 0.5,
+                rootScoreLead = 0.0, totalVisits = 0, isDuringSearch = true,
+            )
+        }
     }
 
     companion object {

@@ -30,6 +30,15 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
+
+    // ── NDK / CMake 配置 ─────────────────────────────────
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+    ndk { abiFilters += listOf("arm64-v8a") }
 }
 
 dependencies {
