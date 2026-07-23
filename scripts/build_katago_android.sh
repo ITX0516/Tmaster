@@ -27,8 +27,13 @@ cd "$BUILD_DIR"
 
 if [ ! -d "KataGo" ]; then
     echo "Cloning KataGo $KATAGO_VERSION..."
-    git clone --branch "$KATAGO_VERSION" --depth 1 \
+    git clone --branch "$KATAGO_VERSION" --depth 1 --recurse-submodules \
         https://github.com/lightvector/KataGo.git
+else
+    echo "KataGo already cloned, updating submodules..."
+    cd KataGo
+    git submodule update --init --recursive
+    cd ..
 fi
 
 # ── 2. 复制源码到项目 ─────────────────────────────────────
