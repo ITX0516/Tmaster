@@ -47,23 +47,8 @@ object EngineManager {
             logger.i("config ready: $configPath")
 
             val modelMgr = ModelManager(context)
-            var modelLoaded = false
-            for (modelId in listOf("15b", "8b")) {
-                try {
-                    _state.value = State.DOWNLOADING
-                    modelPath = modelMgr.selectModel(modelId)
-                    modelLoaded = true
-                    logger.i("model $modelId ready")
-                    break
-                } catch (e: TmasterException.ModelDownloadFailed) {
-                    logger.w("$modelId download failed: ${e.message}")
-                }
-            }
-            if (!modelLoaded) {
-                throw TmasterException.ModelNotLoaded(
-                    "无法下载模型，请检查网络连接",
-                )
-            }
+            modelPath = modelMgr.getDefaultModel()
+            logger.i("model ready: $modelPath")
 
             _state.value = State.INITIALIZING
             engine = LocalKataGo(modelPath = modelPath!!, configPath = configPath!!)
