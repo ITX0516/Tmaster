@@ -64,7 +64,7 @@ cmake . -B build-android \
     -DBUILD_TESTING=OFF \
     -DBUILD_DISTRIBUTED=OFF \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS="-O3 -DNDEBUG" \
+    -DCMAKE_CXX_FLAGS="-O3 -DNDEBUG -DBYTE_ORDER=1234 -DLITTLE_ENDIAN=1234 -DBIG_ENDIAN=4321" \
     ${EIGEN3_INCLUDE_DIR:+-DEigen3_DIR="$EIGEN3_INCLUDE_DIR"}
 
 # ── 4. 编译 ───────────────────────────────────────────────
