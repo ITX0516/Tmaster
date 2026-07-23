@@ -115,7 +115,8 @@ class ConversationManager(
         )
     }
 
-    private fun buildAssistantToolCalls(calls: List<ToolCall>): Map<String, Any> {
+    @Suppress("UNCHECKED_CAST")
+    private fun buildAssistantToolCalls(calls: List<ToolCall>): Map<String, Any?> {
         return mapOf(
             "role" to "assistant",
             "content" to null,

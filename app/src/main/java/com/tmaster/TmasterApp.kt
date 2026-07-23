@@ -17,7 +17,7 @@ class TmasterApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        TLogger.i("App") { "Tmaster starting..." }
+        TLogger.i("App", "Tmaster starting...")
 
         database = AppDatabase.getInstance(this)
         gameRepo = GameRepository(database.gameDao())

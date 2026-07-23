@@ -29,7 +29,7 @@ import com.tmaster.ui.theme.BoardTheme
 fun GoBoard(
     state: BoardState,
     boardTheme: BoardTheme = BoardTheme.CLASSIC,
-    candidates: List<BoardOverlay.CandidateMark> = emptyList(),
+    candidates: List<CandidateMark> = emptyList(),
     overlay: BoardOverlay = BoardOverlay(),
     onTap: (Coord) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -42,7 +42,7 @@ fun GoBoard(
                 detectTapGestures { offset ->
                     val coord = pixelToCoord(
                         offset.x, offset.y,
-                        size.width, state.boardSize,
+                        size.width.toInt(), state.boardSize,
                     )
                     onTap(coord)
                 }
@@ -128,7 +128,7 @@ private fun DrawScope.drawLastMoveMarker(
 }
 
 private fun DrawScope.drawCandidates(
-    candidates: List<BoardOverlay.CandidateMark>, cellSize: Float, ox: Float, oy: Float,
+    candidates: List<CandidateMark>, cellSize: Float, ox: Float, oy: Float,
 ) {
     val paint = android.graphics.Paint().apply {
         textSize = cellSize * 0.3f
@@ -182,8 +182,8 @@ private fun DrawScope.drawOverlay(
 }
 
 /** 屏幕像素坐标 → 棋盘坐标。 */
-private fun pixelToCoord(px: Float, py: Float, boardPixelSize: Float, boardSize: Int): Coord {
-    val cellSize = boardPixelSize / boardSize
+private fun pixelToCoord(px: Float, py: Float, boardPixelSize: Int, boardSize: Int): Coord {
+    val cellSize = boardPixelSize.toFloat() / boardSize
     val boardWidth = cellSize * (boardSize - 1)
     val ox = (boardPixelSize - boardWidth) / 2f
     val oy = ox

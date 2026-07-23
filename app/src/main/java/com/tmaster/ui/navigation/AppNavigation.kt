@@ -3,9 +3,9 @@ package com.tmaster.ui.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
-import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -23,7 +23,7 @@ import com.tmaster.ui.teacher.TeacherScreen
 enum class Screen(val route: String, val label: String, val icon: ImageVector) {
     PLAY("play", "对弈", Icons.Default.SportsEsports),
     ANALYSIS("analysis", "分析", Icons.Default.Analytics),
-    TEACHER("teacher", "AI老师", Icons.Default.Chat),
+    TEACHER("teacher", "AI老师", Icons.Default.Person),
     LIBRARY("library", "棋谱库", Icons.Default.FolderOpen),
 }
 
