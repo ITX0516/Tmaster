@@ -21,9 +21,11 @@ git clone --branch "$KATAGO_VERSION" --depth 1 \
     "$KATAGO_DEST"
 
 # 单独下载 tclap (shallow clone + submodules 不兼容)
+# KataGo 使用的是 https://github.com/eile/tclap
 TCLAP_DIR="$KATAGO_DEST/cpp/command/tclap"
 rm -rf "$TCLAP_DIR"
-git clone --depth 1 https://github.com/lightvector/tclap.git "$TCLAP_DIR"
+git clone --depth 1 https://github.com/eile/tclap.git "$TCLAP_DIR" || \
+git clone --depth 1 https://github.com/mirror/tclap.git "$TCLAP_DIR"
 rm -rf "$TCLAP_DIR/.git"
 
 # 验证关键文件
