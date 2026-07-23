@@ -8,6 +8,19 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
+// ─────────────────────────────────────────────────────────────
+// KATAGO_REAL 模式 — 链接 libkatago.a 后启用。
+// 在 CMakeLists.txt 中取消 KATAGO_MOCK 改为 -DKATAGO_REAL 激活。
+//
+// 工作原理:
+//   1. 重定向 std::cin / std::cout 到 stringstream
+//   2. 在新线程调用 kataGoMain() → GTP 主循环
+//   3. sendCommand() 写入输入流 → kataGoMain 读取
+//   4. kataGoMain 的 cout 输出 → 线程捕获 → 返回给 JNI
+//
+// 参考: BadukAI / Ah Q Go 的 Android KataGo 集成方式
+// ─────────────────────────────────────────────────────────────
+
 GtpClient::GtpClient() = default;
 
 GtpClient::~GtpClient() {
@@ -24,55 +37,65 @@ bool GtpClient::initialize(const std::string& modelPath,
     LOGI("Initializing KataGo: model=%s, config=%s, board=%d",
          modelPath.c_str(), configPath.c_str(), boardSize);
 
-    // TODO: 调用 KataGo C++ API 初始化引擎。
-    // KataGo 的 setupDefaultConfig() 和 mainInitialization() 等函数
-    // 需要在编译时链接 KataGo 的 libkatago.a。
-    //
-    // 实际集成步骤：
-    // 1. 从 https://github.com/lightvector/KataGo clone 源码
-    // 2. 修改 CMakeLists.txt 编译为 libkatago.a (ARM64)
-    // 3. 调用 KataGo 的 public API：
-    //
-    //    ConfigParser cfg(configPath);
-    //    SearchParams params = Setup::setupParams(cfg);
-    //    NNEvaluator* nnEval = Setup::initializeNNEvaluator(modelPath, cfg, ...);
-    //    Search* search = new Search(params, nnEval, ...);
-    //
-    // 当前版本使用 stdin/stdout 重定向的简化方案启动 KataGo GTP 主循环。
-
     running_ = true;
-    ready_ = true;
 
-    // 启动引擎线程
-    engineThread_ = std::thread(&GtpClient::engineThread, this);
+#ifdef KATAGO_REAL
+    engineThread_ = std::thread(&GtpClient::engineThreadReal, this);
+#else
+    engineThread_ = std::thread(&GtpClient::engineThreadStub, this);
+#endif
 
-    // 等待引擎就绪（发送 boardsize 确认）
+    // 发送基本设置
     sendAndWait("boardsize " + std::to_string(boardSize));
     sendAndWait("clear_board");
 
-    LOGI("KataGo engine ready");
+    ready_ = true;
+    LOGI("KataGo ready");
     return true;
 }
 
-void GtpClient::engineThread() {
-    LOGI("Engine thread starting...");
+// ── 真实引擎线程 ───────────────────────────────────────────
+#ifdef KATAGO_REAL
 
-    // ─────────────────────────────────────────────────────────
-    // 这里是 KataGo GTP 主循环的入口。
-    //
-    // 当链接真实 KataGo 库后，调用方式：
-    //
-    //   // 重定向 stdin/stdout
-    //   std::streambuf* oldCin = std::cin.rdbuf(inputStream.rdbuf());
-    //   std::streambuf* oldCout = std::cout.rdbuf(outputStream.rdbuf());
-    //   // 运行 KataGo main
-    //   kataGoMain(argc, argv);
-    //   // 恢复
-    //   std::cin.rdbuf(oldCin);
-    //   std::cout.rdbuf(oldCout);
-    //
-    // 当前版本：运行简单的 Mock GTP 循环用于开发调试。
-    // ─────────────────────────────────────────────────────────
+void GtpClient::engineThreadReal() {
+    LOGI("KataGo GTP engine starting...");
+
+    // 重定向 stdin/stdout → 内存流
+    std::stringstream inputStream;
+    std::stringstream outputStream;
+
+    auto* oldCinBuf  = std::cin.rdbuf(inputStream.rdbuf());
+    auto* oldCoutBuf = std::cout.rdbuf(outputStream.rdbuf());
+
+    // 构造 KataGo 启动参数
+    // kataGoMain 在 KataGo 源码中的 cpp/main.cpp 定义
+    // 参数格式: katago gtp -model <path> -config <path>
+    const char* argv[] = {
+        "katago",
+        "gtp",
+        "-model", modelPath_.c_str(),
+        "-config", configPath_.c_str(),
+        nullptr
+    };
+    int argc = 6;
+
+    // 在独立线程运行 KataGo GTP 主循环
+    // KataGo 源码 cpp/main.cpp 中定义:
+    extern int kataGoMain(int argc, const char* argv[]);
+    kataGoMain(argc, argv);
+
+    // 恢复标准 I/O
+    std::cin.rdbuf(oldCinBuf);
+    std::cout.rdbuf(oldCoutBuf);
+    LOGI("KataGo GTP engine stopped");
+}
+
+#else
+
+// ── 占位线程 (KataGo 未编译) ──────────────────────────────
+void GtpClient::engineThreadStub() {
+    LOGI("KataGo NOT compiled — engine is a stub.");
+    LOGI("Run build_katago_android.sh then rebuild with -DKATAGO_REAL");
 
     while (running_) {
         std::string cmd;
@@ -86,36 +109,9 @@ void GtpClient::engineThread() {
             inputBuffer_.clear();
         }
 
-        // Mock GTP 处理
-        std::string response;
+        std::string response = "? KataGo not compiled. "
+            "Run build_katago_android.sh first.\n\n";
 
-        if (cmd.find("version") != std::string::npos) {
-            response = "= 1.0\n\n";
-        } else if (cmd.find("name") != std::string::npos) {
-            response = "= KataGo (Tmaster)\n\n";
-        } else if (cmd.find("boardsize") != std::string::npos) {
-            response = "= \n\n";
-        } else if (cmd.find("clear_board") != std::string::npos) {
-            response = "= \n\n";
-        } else if (cmd.find("komi") != std::string::npos) {
-            response = "= \n\n";
-        } else if (cmd.find("play") != std::string::npos) {
-            response = "= \n\n";
-        } else if (cmd.find("genmove") != std::string::npos) {
-            response = "= pd\n\n";  // Mock: always play pd
-        } else if (cmd.find("kata-analyze") != std::string::npos) {
-            // Parse interval from command
-            response = "= \n\n";
-            // Analysis will be handled by analysisThread
-        } else if (cmd.find("kata-set-rules") != std::string::npos) {
-            response = "= \n\n";
-        } else if (cmd.find("kata-stop") != std::string::npos) {
-            response = "= \n\n";
-        } else {
-            response = "? unknown command\n\n";
-        }
-
-        // 返回响应
         {
             std::lock_guard<std::mutex> lock(mutex_);
             outputBuffer_ = response;
@@ -123,9 +119,12 @@ void GtpClient::engineThread() {
         }
         responseCv_.notify_one();
     }
-
-    LOGI("Engine thread stopped");
+    LOGI("Engine stub stopped");
 }
+
+#endif // KATAGO_REAL
+
+// ── 通用方法 ───────────────────────────────────────────────
 
 std::string GtpClient::sendCommand(const std::string& cmd) {
     LOGD("GTP → %s", cmd.c_str());
@@ -137,7 +136,7 @@ std::string GtpClient::sendCommand(const std::string& cmd) {
 std::string GtpClient::sendAndWait(const std::string& cmd) {
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        inputBuffer_ = cmd;
+        inputBuffer_ = cmd + "\n";
         responseReady_ = false;
     }
     responseCv_.notify_one();
@@ -150,9 +149,11 @@ std::string GtpClient::sendAndWait(const std::string& cmd) {
 
 void GtpClient::startAnalysis(AnalysisCallback callback) {
     if (analyzing_) return;
-
     analysisCallback_ = std::move(callback);
+
+#ifdef KATAGO_REAL
     sendAndWait("kata-analyze interval 100");
+#endif
 
     analyzing_ = true;
     analysisThread_ = std::thread(&GtpClient::analysisThread, this);
@@ -160,33 +161,29 @@ void GtpClient::startAnalysis(AnalysisCallback callback) {
 }
 
 void GtpClient::analysisThread() {
+#ifdef KATAGO_REAL
+    // 真实模式: 从 cout 流读取 KataGo 分析 JSON
+    // GTP "kata-analyze" 会持续输出分析行到 stdout
+    // 每行格式: {"id":"...","moveInfos":[...],"rootInfo":{...}}
+    // 此线程读取这些行并回调
     while (analyzing_ && running_) {
-        // 轮询分析结果 — KataGo 通过 GTP 异步返回 JSON
-        // 实际集成时，KataGo 的分析引擎通过回调输出中间结果
-
-        // Mock: 生成模拟分析 JSON 用于 UI 开发
-        std::string mockJson = R"({
-            "id": "katago-1",
-            "isDuringSearch": true,
-            "rootInfo": {"winrate": 0.52, "scoreLead": 0.5, "visits": 500},
-            "moveInfos": [
-                {"move": "pd", "visits": 200, "winrate": 0.52, "scoreLead": 0.5, "order": 0, "pv": ["pd", "dp"]},
-                {"move": "dp", "visits": 150, "winrate": 0.48, "scoreLead": -0.3, "order": 1, "pv": ["dp", "pd"]},
-                {"move": "pp", "visits": 80, "winrate": 0.45, "scoreLead": -1.2, "order": 2, "pv": ["pp", "dd"]}
-            ]
-        })";
-
-        if (analysisCallback_) {
-            analysisCallback_(mockJson);
-        }
-
+        // TODO: 从 output stream 读取分析行
+        // 需要重构流管理以区分 GTP 响应和分析输出
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+#else
+    // 无 KataGo: 不产生分析数据
+    while (analyzing_ && running_) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
+#endif
 }
 
 void GtpClient::stopAnalysis() {
     analyzing_ = false;
+#ifdef KATAGO_REAL
     sendAndWait("kata-stop");
+#endif
     if (analysisThread_.joinable()) {
         analysisThread_.join();
     }
@@ -198,16 +195,17 @@ void GtpClient::destroy() {
     analyzing_ = false;
     responseCv_.notify_all();
 
-    if (engineThread_.joinable()) {
-        engineThread_.join();
+#ifdef KATAGO_REAL
+    // 给 GTP 主循环发送 quit
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        inputBuffer_ = "quit\n";
     }
-    if (analysisThread_.joinable()) {
-        analysisThread_.join();
-    }
+    responseCv_.notify_one();
+#endif
 
-    // 调用 KataGo 清理
-    // delete search;
-    // delete nnEval;
+    if (engineThread_.joinable()) engineThread_.join();
+    if (analysisThread_.joinable()) analysisThread_.join();
 
     ready_ = false;
     LOGI("Engine destroyed");

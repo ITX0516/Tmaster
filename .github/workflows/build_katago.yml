@@ -1,0 +1,44 @@
+name: Build KataGo for Android
+
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    paths:
+      - 'scripts/build_katago_android.sh'
+      - '.github/workflows/build_katago.yml'
+
+jobs:
+  build:
+    name: Build KataGo ARM64
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup NDK
+        run: |
+          ANDROID_ROOT=/usr/local/lib/android/sdk
+          NDK_VERSION="26.3.11579264"
+          if [ ! -d "$ANDROID_ROOT/ndk/$NDK_VERSION" ]; then
+            echo "Installing NDK $NDK_VERSION..."
+            yes | $ANDROID_ROOT/cmdline-tools/latest/bin/sdkmanager "ndk;$NDK_VERSION"
+          fi
+          echo "ANDROID_NDK_HOME=$ANDROID_ROOT/ndk/$NDK_VERSION" >> $GITHUB_ENV
+
+      - name: Build KataGo
+        run: |
+          chmod +x scripts/build_katago_android.sh
+          ./scripts/build_katago_android.sh
+
+      - name: Upload libkatago.a
+        uses: actions/upload-artifact@v4
+        with:
+          name: libkatago-arm64-v8a
+          path: app/src/main/cpp/katago/libkatago.a
+          retention-days: 90
+
+      - name: Trigger APK rebuild
+        if: success()
+        run: |
+          echo "libkatago.a built successfully."
+          echo "Add to repo and rebuild APK."
