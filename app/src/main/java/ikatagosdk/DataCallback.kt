@@ -21,4 +21,11 @@ internal class ProxyDataCallback(private val delegate: DataCallback) {
     private fun proxyCallback(data: String) = delegate.callback(data)
     private fun proxyOnReady() = delegate.onReady()
     private fun proxyStderrCallback(data: String) = delegate.stderrCallback(data)
+
+    companion object {
+        init {
+            System.loadLibrary("katago")
+            System.loadLibrary("gojni")
+        }
+    }
 }

@@ -15,4 +15,11 @@ class ClientRunner {
     external fun setClient(client: Client)
     external fun getRunner(): KatagoRunner
     external fun setRunner(runner: KatagoRunner)
+
+    companion object {
+        init {
+            System.loadLibrary("katago")
+            System.loadLibrary("gojni")
+        }
+    }
 }

@@ -17,4 +17,11 @@ class Client(
     external fun setExtraArgs(args: String)
     external fun setForceNode(node: String)
     external fun queryServer(): String
+
+    companion object {
+        init {
+            System.loadLibrary("katago")
+            System.loadLibrary("gojni")
+        }
+    }
 }
