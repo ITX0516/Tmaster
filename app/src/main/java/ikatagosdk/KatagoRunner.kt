@@ -1,7 +1,10 @@
 package ikatagosdk
 
 class KatagoRunner {
-    // Created by Client.createKatagoRunner(), NOT by constructor
+    init {
+        NativeLoader.ensureLoaded()
+    }
+
     external fun sendGTPCommand(cmd: String): String
     external fun stop()
     external fun run(): Boolean
@@ -18,10 +21,5 @@ class KatagoRunner {
     external fun setExtraInfo(key: String, value: String)
     external fun disableCompress()
 
-    companion object {
-        init {
-            System.loadLibrary("katago")
-            System.loadLibrary("gojni")
-        }
-    }
+    companion object
 }

@@ -5,8 +5,7 @@ package ikatagosdk
  */
 object Ikatagosdk {
     init {
-        System.loadLibrary("katago")
-        System.loadLibrary("gojni")
+        NativeLoader.ensureLoaded()
     }
 
     external fun _init()

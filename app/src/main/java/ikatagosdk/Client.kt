@@ -10,6 +10,10 @@ class Client(
     username: String,
     password: String,
 ) {
+    init {
+        NativeLoader.ensureLoaded()
+    }
+
     external fun createKatagoRunner(): KatagoRunner
     external fun setEngineType(type: String)
     external fun setGpuType(type: String)
@@ -18,10 +22,5 @@ class Client(
     external fun setForceNode(node: String)
     external fun queryServer(): String
 
-    companion object {
-        init {
-            System.loadLibrary("katago")
-            System.loadLibrary("gojni")
-        }
-    }
+    companion object
 }

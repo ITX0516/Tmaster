@@ -7,6 +7,7 @@ class ClientRunner {
     private var nativePtr: Long = 0
 
     init {
+        NativeLoader.ensureLoaded()
         _NewClientRunnerFromArgs(emptyArray())
     }
 
@@ -16,10 +17,5 @@ class ClientRunner {
     external fun getRunner(): KatagoRunner
     external fun setRunner(runner: KatagoRunner)
 
-    companion object {
-        init {
-            System.loadLibrary("katago")
-            System.loadLibrary("gojni")
-        }
-    }
+    companion object
 }
