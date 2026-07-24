@@ -70,11 +70,7 @@ private fun EngineErrorScreen(error: String?, onRetry: () -> Unit) {
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "需要先编译 KataGo 引擎:\n\n" +
-                        "1. 运行 scripts/build_katago_android.sh\n" +
-                        "2. 或下载 GitHub Actions 的 katago-sources artifact\n" +
-                        "3. 放到 app/src/main/cpp/katago/ 目录\n" +
-                        "4. 重新编译 APK",
+                    text = "请点击右上角「日志」按钮查看详细信息，\n截图发给开发者排查。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
