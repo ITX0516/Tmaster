@@ -11,12 +11,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.GZIPInputStream
 
-/**
- * 模型管理器 — 解压内置权重文件到内部存储。
- *
- * 权重文件来自 AhQ Go Lite 的 res/*.gz，
- * 存放在 assets/katago_weights/ 中。
- */
+// 模型管理器: 解压内置权重文件到内部存储。
+// 权重文件来自 AhQ Go Lite 的 res/*.gz, 存放在 assets/katago_weights/
 class ModelManager(private val context: Context) {
     private val logger = ModuleLogger("Model")
 
@@ -27,17 +23,14 @@ class ModelManager(private val context: Context) {
     private val _currentModel = MutableStateFlow<ModelInfo?>(null)
     val currentModel: StateFlow<ModelInfo?> = _currentModel
 
-    /**
-     * 内置权重文件清单（对应 assets/katago_weights/ 中的文件名）。
-     * 用硬编码列表，不依赖 assets.list()。
-     */
+    // 内置权重文件清单, 硬编码不依赖 assets.list()
     private val builtinWeights = listOf(
         "42.gz", "5f.gz", "8z.gz",
         "Cu.gz", "Kp.gz", "eo.gz",
         "mW.gz", "pG.gz", "s4.gz",
     )
 
-    /** 解压内置权重并返回权重目录路径。 */
+    // 解压内置权重并返回权重目录路径。
     suspend fun getDefaultModel(): String = withContext(Dispatchers.IO) {
         logger.i("extracting ${builtinWeights.size} built-in weight files...")
 
