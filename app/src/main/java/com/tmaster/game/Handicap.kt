@@ -41,10 +41,11 @@ object Handicap {
     /** 创建让子初始棋盘。 */
     fun setup(boardSize: Int, n: Int, komi: Double = 0.5): BoardState {
         if (n < 2) return BoardState.empty(boardSize, komi)
-        var state = BoardState.empty(boardSize, komi)
+        val state = BoardState.empty(boardSize, komi)
+        val grid = arrayOfNulls<StoneColor>(boardSize * boardSize)
         for (c in placements(boardSize, n)) {
-            state = state.play(c) ?: state
+            grid[c.y * boardSize + c.x] = StoneColor.BLACK
         }
-        return state
+        return state.copyWithGrid(grid, currentPlayer = StoneColor.WHITE)
     }
 }

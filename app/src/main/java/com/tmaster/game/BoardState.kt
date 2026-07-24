@@ -230,6 +230,15 @@ class BoardState private constructor(
         komi, blackPlayer, whitePlayer, result,
     )
 
+    fun copyWithGrid(
+        newGrid: Array<StoneColor?>,
+        currentPlayer: StoneColor = this.currentPlayer,
+    ): BoardState = BoardState(
+        boardSize, currentPlayer, newGrid.clone(),
+        moveHistory.toList(), previousHashes.toSet(),
+        komi, blackPlayer, whitePlayer, result,
+    )
+
     companion object {
         fun empty(boardSize: Int = 19, komi: Double = 6.5): BoardState = BoardState(
             boardSize = boardSize,

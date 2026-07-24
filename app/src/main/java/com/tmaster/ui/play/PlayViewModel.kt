@@ -56,9 +56,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 _engineState.value = state
                 if (state == EngineManager.State.READY) {
                     _message.value = "引擎就绪，点击棋盘开始对局"
-                    // 如果用户执黑，黑先，不用 AI 走
-                    // 如果用户执白，AI 走黑先
-                    if (aiColor == StoneColor.WHITE) {
+                    // 黑先，如果 AI 执黑则 AI 先走
+                    if (aiColor == StoneColor.BLACK) {
                         aiMove()
                     }
                 } else if (state == EngineManager.State.ERROR) {
@@ -120,11 +119,11 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         val state = _boardState.value
         if (state.currentPlayer == aiColor) return
 
-        _boardState.value = state.pass()
+        val newState = state.pass()
+        _boardState.value = newState
 
-        // 检查连 Pass 结束
-        val lastMove = state.lastMove
-        if (lastMove?.coord?.isPass == true) {
+        // 检查连 Pass 结束（上一手也是 Pass）
+        if (state.lastMove?.coord?.isPass == true) {
             _message.value = "双方 Pass，对局结束"
             return
         }
@@ -152,7 +151,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         _boardState.value = BoardState.empty(boardSize, komi)
         _lastAiMove.value = null
         _message.value = "新对局开始"
-        if (aiColor == StoneColor.WHITE) aiMove()
+        if (aiColor == StoneColor.BLACK) aiMove()
     }
 
     /** 认输 */

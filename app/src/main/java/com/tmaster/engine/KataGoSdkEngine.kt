@@ -91,23 +91,28 @@ class KataGoSdkEngine(
     }
 
     override fun analyze(state: BoardState): Flow<KataAnalysisResult> = flow {
-        sendGtp("kata-analyze interval 100")
-        var count = 0
-        while (count < 50) {
-            kotlinx.coroutines.delay(200)
-            count++
-        }
+        syncBoard(state)
+        val raw = sendGtpWithResponse("kata-analyze interval 100")
+        val result = parseKataAnalyzeResponse(raw)
+        emit(result)
     }
 
     override suspend fun generateMove(state: BoardState, temperature: Double): Coord {
         syncBoard(state)
         val color = if (state.currentPlayer == StoneColor.BLACK) "B" else "W"
-        val response = runner!!.sendGTPCommand("genmove $color\n")
-        logger.d("genmove → $response")
+        val response = sendGtpWithResponse("genmove $color")
         val parsed = GtpProtocol.parseResponse(response)
         return when (parsed) {
-            is GtpResponse.Success -> Coord.fromSgf(parsed.content.trim())
-            else -> Coord.PASS
+            is GtpResponse.Success -> {
+                val content = parsed.content.trim().lowercase()
+                when {
+                    content == "pass" -> Coord.PASS
+                    content == "resign" -> Coord.PASS
+                    content.length >= 2 -> Coord.fromSgf(content)
+                    else -> Coord.PASS
+                }
+            }
+            is GtpResponse.Error -> Coord.PASS
         }
     }
 
@@ -117,7 +122,9 @@ class KataGoSdkEngine(
         sendGtp("play $color ${last.coord.toSgf(state.boardSize)}")
     }
 
-    override suspend fun stopAnalysis() { sendGtp("kata-stop") }
+    override suspend fun stopAnalysis() {
+        try { sendGtp("kata-stop") } catch (_: Exception) {}
+    }
 
     override suspend fun dispose() {
         try { runner?.stop() } catch (_: Exception) {}
@@ -135,10 +142,65 @@ class KataGoSdkEngine(
     }
 
     private fun sendGtp(cmd: String) {
+        sendGtpWithResponse(cmd)
+    }
+
+    private fun sendGtpWithResponse(cmd: String): String {
         val r = runner ?: throw TmasterException.EngineNotFound("runner null")
         logger.d("GTP → $cmd")
-        // GTP commands need trailing newline (per AhQ Go decompilation)
         val response = r.sendGTPCommand("$cmd\n")
         logger.d("GTP ← ${response.take(100)}")
+        return response
+    }
+
+    private fun parseKataAnalyzeResponse(raw: String): KataAnalysisResult {
+        val lines = raw.lines().filter { it.isNotBlank() }
+        val jsonLine = lines.firstOrNull { it.trimStart().startsWith("{") }
+            ?: return KataAnalysisResult(emptyList(), 0.5, 0.0, 0, false)
+
+        return try {
+            val moveInfos = mutableListOf<KataMoveInfo>()
+            var rootWinRate = 0.5
+            var rootScoreLead = 0.0
+            var totalVisits = 0
+            var isDuringSearch = true
+
+            val rootWinRateRegex = """"winrate"\s*:\s*([\d.]+)""".toRegex()
+            val rootScoreRegex = """"scoreLead"\s*:\s*([-\d.]+)""".toRegex()
+            val visitsRegex = """"visits"\s*:\s*(\d+)""".toRegex()
+
+            rootWinRateRegex.find(jsonLine)?.let { rootWinRate = it.groupValues[1].toDouble() }
+            rootScoreRegex.find(jsonLine)?.let { rootScoreLead = it.groupValues[1].toDouble() }
+            visitsRegex.find(jsonLine)?.let { totalVisits = it.groupValues[1].toInt() }
+
+            val moveInfoRegex = """"moveInfos"\s*:\s*\[(.*?)\]""".toRegex()
+            moveInfoRegex.find(jsonLine)?.let { match ->
+                val moveStr = match.groupValues[1]
+                val singleMoveRegex = """\{[^}]*\}""".toRegex()
+                singleMoveRegex.findAll(moveStr).forEachIndexed { idx, moveMatch ->
+                    val moveJson = moveMatch.value
+                    val moveRegex = """"move"\s*:\s*"([a-z]+)"""".toRegex()
+                    val winRegex = """"winrate"\s*:\s*([\d.]+)""".toRegex()
+                    val scoreRegex = """"scoreLead"\s*:\s*([-\d.]+)""".toRegex()
+                    val pvRegex = """"pv"\s*:\s*\[(.*?)\]""".toRegex()
+
+                    val move = moveRegex.find(moveJson)?.groupValues?.get(1) ?: ""
+                    val wr = winRegex.find(moveJson)?.groupValues?.get(1)?.toDouble() ?: 0.0
+                    val sl = scoreRegex.find(moveJson)?.groupValues?.get(1)?.toDouble() ?: 0.0
+                    val vis = visitsRegex.find(moveJson)?.groupValues?.get(1)?.toInt() ?: 0
+                    val pv = pvRegex.find(moveJson)?.groupValues?.get(1)
+                        ?.replace("\"", "")?.split(",")?.map { it.trim() } ?: emptyList()
+
+                    if (move.isNotEmpty()) {
+                        moveInfos.add(KataMoveInfo(move, vis, wr, sl, idx + 1, pv))
+                    }
+                }
+            }
+
+            KataAnalysisResult(moveInfos, rootWinRate, rootScoreLead, totalVisits, isDuringSearch)
+        } catch (e: Exception) {
+            logger.e("parse analyze failed: ${e.message}")
+            KataAnalysisResult(emptyList(), 0.5, 0.0, 0, false)
+        }
     }
 }
