@@ -19,8 +19,8 @@ class ModelManager(private val context: Context) {
     private val _currentModel = MutableStateFlow<ModelInfo?>(null)
     val currentModel: StateFlow<ModelInfo?> = _currentModel
 
-    // res/raw/ 中的资源名 (Android要求以字母开头)
-    private val resNames = listOf("w_42", "w_5f", "w_8z", "Cu", "Kp", "eo", "mW", "pG", "s4")
+    // res/raw/ 中的资源名 (只能小写字母+数字+下划线)
+    private val resNames = listOf("w_42", "w_5f", "w_8z", "cu", "kp", "eo", "mw", "pg", "s4")
 
     suspend fun getDefaultModel(): String = withContext(Dispatchers.IO) {
         logger.i("extracting ${resNames.size} weight files from res/raw/")
