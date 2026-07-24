@@ -5,12 +5,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.tmaster.engine.EngineManager
 import com.tmaster.game.Coord
 import com.tmaster.game.StoneColor
@@ -21,7 +24,10 @@ import com.tmaster.ui.theme.BoardTheme
 import com.tmaster.ui.theme.GoodGreen
 
 @Composable
-fun PlayScreen(viewModel: PlayViewModel = viewModel()) {
+fun PlayScreen(
+    navController: NavController,
+    viewModel: PlayViewModel = viewModel(),
+) {
     val boardState by viewModel.boardState.collectAsState()
     val engineState by viewModel.engineState.collectAsState()
     val aiThinking by viewModel.aiThinking.collectAsState()
@@ -47,8 +53,13 @@ fun PlayScreen(viewModel: PlayViewModel = viewModel()) {
                 }
                 Text(status, style = MaterialTheme.typography.labelSmall, color = color)
                 Text(if (aiThinking) "AI 思考中..." else "", style = MaterialTheme.typography.labelSmall)
-                TextButton(onClick = { showLog = !showLog }) {
-                    Text(if (showLog) "隐藏日志" else "日志", style = MaterialTheme.typography.labelSmall)
+                Row {
+                    TextButton(onClick = { showLog = !showLog }) {
+                        Text(if (showLog) "隐藏日志" else "日志", style = MaterialTheme.typography.labelSmall)
+                    }
+                    IconButton(onClick = { navController.navigate("settings") }) {
+                        Icon(Icons.Default.Settings, contentDescription = "设置", modifier = Modifier.size(20.dp))
+                    }
                 }
             }
         }

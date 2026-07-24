@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,6 +19,8 @@ import androidx.navigation.compose.rememberNavController
 import com.tmaster.ui.analysis.AnalysisScreen
 import com.tmaster.ui.library.LibraryScreen
 import com.tmaster.ui.play.PlayScreen
+import com.tmaster.ui.settings.LogViewerScreen
+import com.tmaster.ui.settings.SettingsScreen
 import com.tmaster.ui.teacher.TeacherScreen
 
 enum class Screen(val route: String, val label: String, val icon: ImageVector) {
@@ -25,6 +28,15 @@ enum class Screen(val route: String, val label: String, val icon: ImageVector) {
     ANALYSIS("analysis", "分析", Icons.Default.Analytics),
     TEACHER("teacher", "AI老师", Icons.Default.Person),
     LIBRARY("library", "棋谱库", Icons.Default.FolderOpen),
+    SETTINGS("settings", "设置", Icons.Default.Settings),
+}
+
+fun navigateToSettings(navController: NavHostController) {
+    navController.navigate("settings")
+}
+
+fun navigateToLogViewer(navController: NavHostController) {
+    navController.navigate("logviewer")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,10 +73,19 @@ fun TmasterNavHost() {
             startDestination = Screen.PLAY.route,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Screen.PLAY.route) { PlayScreen() }
+            composable(Screen.PLAY.route) { PlayScreen(navController) }
             composable(Screen.ANALYSIS.route) { AnalysisScreen() }
             composable(Screen.TEACHER.route) { TeacherScreen() }
             composable(Screen.LIBRARY.route) { LibraryScreen() }
+            composable("settings") {
+                SettingsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenLog = { navController.navigate("logviewer") }
+                )
+            }
+            composable("logviewer") {
+                LogViewerScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 }

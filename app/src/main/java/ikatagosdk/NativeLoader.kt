@@ -1,6 +1,7 @@
 package ikatagosdk
 
 import android.util.Log
+import com.tmaster.log.FileLogger
 
 /**
  * 统一管理 native 库加载，确保在任何 native 方法调用前库已加载。
@@ -16,19 +17,42 @@ object NativeLoader {
     @Volatile
     private var loaded = false
 
+    @Volatile
+    var loadError: Throwable? = null
+        private set
+
     /**
      * 确保 native 库已加载。线程安全，多次调用无害。
      */
     @Synchronized
     fun ensureLoaded() {
         if (loaded) return
+        loadError?.let { throw it }
+
+        Log.i(TAG, "Loading native library gojni...")
         try {
             System.loadLibrary("gojni")
-            Log.i(TAG, "libgojni.so loaded")
+            Log.i(TAG, "libgojni.so loaded successfully")
             loaded = true
         } catch (e: UnsatisfiedLinkError) {
-            Log.e(TAG, "Failed to load native libraries: ${e.message}", e)
+            Log.e(TAG, "Failed to load native library: ${e.message}", e)
+            loadError = e
+            // 同时写入文件日志，确保崩溃后能查到
+            try {
+                FileLogger.e(TAG, "Failed to load native library: ${e.message}", e)
+                FileLogger.flush()
+            } catch (_: Exception) {}
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error loading native library: ${e.message}", e)
+            loadError = e
+            try {
+                FileLogger.e(TAG, "Unexpected error loading native library: ${e.message}", e)
+                FileLogger.flush()
+            } catch (_: Exception) {}
             throw e
         }
     }
+
+    fun isLoaded(): Boolean = loaded
 }
