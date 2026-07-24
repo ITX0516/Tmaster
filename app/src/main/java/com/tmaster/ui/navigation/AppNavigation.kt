@@ -6,7 +6,6 @@ import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -28,15 +27,6 @@ enum class Screen(val route: String, val label: String, val icon: ImageVector) {
     ANALYSIS("analysis", "分析", Icons.Default.Analytics),
     TEACHER("teacher", "AI老师", Icons.Default.Person),
     LIBRARY("library", "棋谱库", Icons.Default.FolderOpen),
-    SETTINGS("settings", "设置", Icons.Default.Settings),
-}
-
-fun navigateToSettings(navController: NavHostController) {
-    navController.navigate("settings")
-}
-
-fun navigateToLogViewer(navController: NavHostController) {
-    navController.navigate("logviewer")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

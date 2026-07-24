@@ -15,8 +15,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.tmaster.engine.EngineManager
-import com.tmaster.game.Coord
-import com.tmaster.game.StoneColor
 import com.tmaster.log.LogCollector
 import com.tmaster.ui.board.BoardOverlay
 import com.tmaster.ui.board.GoBoard

@@ -21,8 +21,10 @@ object FileLogger {
     private var logFile: File? = null
     private val queue = LinkedBlockingQueue<String>()
     private val running = AtomicBoolean(false)
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
     private val syncLock = Any()
+
+    private fun formatTime(): String =
+        SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())
 
     fun init(context: Context) {
         val logDir = File(context.filesDir, "logs")
@@ -30,8 +32,7 @@ object FileLogger {
         logFile = File(logDir, "tmaster.log")
         rotateLogs(logDir)
         startWriterThread()
-        // 初始化时立即写一条启动日志，同步写入确保不丢失
-        writeSync("I", "FileLogger", "Log file initialized: ${logFile?.absolutePath}")
+        writeSyncLine("${formatTime()} [I] FileLogger: Log file initialized: ${logFile?.absolutePath}\n")
     }
 
     fun getLogFile(): File? = logFile
@@ -51,34 +52,20 @@ object FileLogger {
     }
 
     fun flush() {
-        // 把队列中所有日志同步写入
         val drained = mutableListOf<String>()
         queue.drainTo(drained)
         if (drained.isNotEmpty()) {
-            synchronized(syncLock) {
-                try {
-                    val f = logFile ?: return
-                    f.appendText(drained.joinToString(""))
-                    checkRotate()
-                } catch (_: Exception) {}
-            }
+            writeLinesSync(drained)
         }
     }
 
     private fun add(level: String, tag: String, msg: String, sync: Boolean) {
-        val time = dateFormat.format(Date())
-        val line = "$time [$level] $tag: $msg\n"
+        val line = "${formatTime()} [$level] $tag: $msg\n"
         if (sync) {
             writeSyncLine(line)
         } else {
             queue.offer(line)
         }
-    }
-
-    private fun writeSync(level: String, tag: String, msg: String) {
-        val time = dateFormat.format(Date())
-        val line = "$time [$level] $tag: $msg\n"
-        writeSyncLine(line)
     }
 
     private fun writeSyncLine(line: String) {
@@ -91,19 +78,29 @@ object FileLogger {
         }
     }
 
+    private fun writeLinesSync(lines: List<String>) {
+        synchronized(syncLock) {
+            try {
+                val f = logFile ?: return
+                f.appendText(lines.joinToString(""))
+                checkRotate()
+            } catch (_: Exception) {}
+        }
+    }
+
     private fun startWriterThread() {
         if (running.getAndSet(true)) return
         Thread {
+            val buffer = mutableListOf<String>()
             while (true) {
                 try {
-                    val line = queue.take()
-                    logFile?.appendText(line)
-                    checkRotate()
+                    buffer.clear()
+                    buffer.add(queue.take())
+                    queue.drainTo(buffer)
+                    writeLinesSync(buffer)
                 } catch (e: InterruptedException) {
                     break
-                } catch (e: Exception) {
-                    // 日志写入失败不能再打日志，避免死循环
-                }
+                } catch (_: Exception) {}
             }
         }.apply {
             name = "FileLogger"

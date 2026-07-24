@@ -7,7 +7,6 @@ import com.tmaster.engine.ModelManager
 import com.tmaster.log.CrashHandler
 import com.tmaster.log.FileLogger
 import com.tmaster.log.TLogger
-import ikatagosdk.NativeLoader
 
 class TmasterApp : Application() {
 

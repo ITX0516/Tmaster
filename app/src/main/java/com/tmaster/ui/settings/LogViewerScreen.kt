@@ -6,7 +6,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tmaster.log.FileLogger
@@ -19,7 +18,6 @@ import kotlinx.coroutines.withContext
  */
 @Composable
 fun LogViewerScreen(onBack: () -> Unit) {
-    val context = LocalContext.current
     var logText by remember { mutableStateOf("加载中...") }
     val scope = rememberCoroutineScope()
 

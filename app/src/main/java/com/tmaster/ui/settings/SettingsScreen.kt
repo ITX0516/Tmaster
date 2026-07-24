@@ -8,7 +8,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.tmaster.log.FileLogger
 
@@ -18,7 +17,6 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onOpenLog: () -> Unit,
 ) {
-    val context = LocalContext.current
     val logPath = FileLogger.getLogFile()?.absolutePath ?: "(未初始化)"
     var placementMethod by remember { mutableIntStateOf(0) }
     var engineType by remember { mutableIntStateOf(0) }
