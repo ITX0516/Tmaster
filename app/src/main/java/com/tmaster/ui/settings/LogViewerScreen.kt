@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 /**
  * 日志查看界面 — 显示文件日志内容。
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogViewerScreen(onBack: () -> Unit) {
     var logText by remember { mutableStateOf("加载中...") }
