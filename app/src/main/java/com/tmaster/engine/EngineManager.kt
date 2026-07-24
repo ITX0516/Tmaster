@@ -19,7 +19,7 @@ object EngineManager {
     private val logger = ModuleLogger("EngineMgr")
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    private var engine: LocalKataGo? = null
+    private var engine: GtpEngine? = null
     private var modelPath: String? = null
     private var configPath: String? = null
 
