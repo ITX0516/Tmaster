@@ -1,21 +1,11 @@
 package ikatagosdk
 
-/**
- * KataGo 引擎运行器 — JNI 对接 libgojni.so。
- * 管理引擎进程、发送 GTP 命令、接收分析数据。
- */
 class KatagoRunner {
-    private var nativePtr: Long = 0
-
-    init {
-        _New()
-    }
-
-    // ── Native 方法 ────────────────────────────────────────
-    private external fun _New()
+    // Created by Client.createKatagoRunner(), NOT by constructor
+    external fun sendGTPCommand(cmd: String): String
+    external fun stop()
     external fun run(): Boolean
     external fun runWithStdio(): Boolean
-    external fun sendGTPCommand(cmd: String): String
     external fun setKataConfig(configPath: String)
     external fun setKataLocalConfig(key: String, value: String)
     external fun setKataName(name: String)

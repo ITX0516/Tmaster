@@ -51,7 +51,7 @@ object EngineManager {
             logger.i("model ready: $modelPath")
 
             _state.value = State.INITIALIZING
-            engine = KataGoSdkEngine(modelPath = modelPath!!, configPath = configPath!!)
+            engine = KataGoSdkEngine(weightDir = modelPath!!, configPath = configPath!!)
             engine!!.initialize(boardSize, komi)
 
             _state.value = State.READY
