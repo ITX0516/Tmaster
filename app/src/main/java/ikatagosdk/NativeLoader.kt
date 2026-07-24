@@ -23,8 +23,6 @@ object NativeLoader {
     fun ensureLoaded() {
         if (loaded) return
         try {
-            System.loadLibrary("katago")
-            Log.i(TAG, "libkatago.so loaded")
             System.loadLibrary("gojni")
             Log.i(TAG, "libgojni.so loaded")
             loaded = true
