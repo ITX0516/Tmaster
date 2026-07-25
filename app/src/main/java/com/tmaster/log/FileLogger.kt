@@ -8,14 +8,11 @@ import java.util.Locale
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
-/**
- * 文件日志写入器 — 将日志写入文件，方便闪退后续排查。
- *
- * 使用独立线程异步写入，避免阻塞主线程。
- */
 object FileLogger {
     private const val MAX_LOG_SIZE = 2 * 1024 * 1024 // 2MB
     private const val MAX_LOG_FILES = 3
+    private const val LOG_DIR_NAME = "log"
+    private const val LOG_FILE_NAME = "log.txt"
 
     @Volatile
     private var logFile: File? = null
@@ -27,9 +24,18 @@ object FileLogger {
         SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())
 
     fun init(context: Context) {
-        val logDir = File(context.filesDir, "logs")
-        if (!logDir.exists()) logDir.mkdirs()
-        logFile = File(logDir, "tmaster.log")
+        val extDir = context.getExternalFilesDir(null)
+        val logDir = if (extDir != null) {
+            val parentDir = extDir.parentFile
+            val targetDir = File(parentDir, LOG_DIR_NAME)
+            if (!targetDir.exists()) targetDir.mkdirs()
+            targetDir
+        } else {
+            val fallback = File(context.filesDir, LOG_DIR_NAME)
+            if (!fallback.exists()) fallback.mkdirs()
+            fallback
+        }
+        logFile = File(logDir, LOG_FILE_NAME)
         rotateLogs(logDir)
         startWriterThread()
         writeSyncLine("${formatTime()} [I] FileLogger: Log file initialized: ${logFile?.absolutePath}\n")
@@ -116,20 +122,22 @@ object FileLogger {
     }
 
     private fun rotateLogs(dir: File) {
-        // 滚动: log.2 -> delete, log.1 -> log.2, log -> log.1
-        for (i in MAX_LOG_FILES - 1 downTo 1) {
-            val old = File(dir, "tmaster.log.$i")
-            if (old.exists()) {
-                if (i == MAX_LOG_FILES - 1) {
-                    old.delete()
-                } else {
-                    old.renameTo(File(dir, "tmaster.log.${i + 1}"))
-                }
+        val logFiles = dir.listFiles { _, name ->
+            name.startsWith(LOG_FILE_NAME) && name != LOG_FILE_NAME
+        }?.sortedBy { it.name }
+
+        logFiles?.forEachIndexed { index, file ->
+            val num = logFiles.size - index
+            if (num >= MAX_LOG_FILES) {
+                file.delete()
+            } else {
+                file.renameTo(File(dir, "$LOG_FILE_NAME.$num"))
             }
         }
-        val current = File(dir, "tmaster.log")
+
+        val current = File(dir, LOG_FILE_NAME)
         if (current.exists()) {
-            current.renameTo(File(dir, "tmaster.log.1"))
+            current.renameTo(File(dir, "$LOG_FILE_NAME.1"))
         }
     }
 
