@@ -78,9 +78,11 @@ object EngineManager {
         scope.cancel()
     }
 
-    /** 把 assets/katago.cfg 复制到私有目录，返回路径。 */
+    /** 把 assets/katago.cfg 复制到外部存储目录，返回路径。 */
     private fun copyDefaultConfig(context: Context): String {
-        val dest = File(context.filesDir, "katago/katago.cfg")
+        val dest = File(
+            context.getExternalFilesDir(null) ?: context.filesDir, "katago/katago.cfg"
+        )
         dest.parentFile?.mkdirs()
         if (!dest.exists()) {
             context.assets.open("katago.cfg").use { input ->

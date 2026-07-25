@@ -56,7 +56,8 @@ class TmasterApp : Application() {
         FileLogger.flush()
 
         try {
-            val weightDir = File(filesDir, "katago/weights")
+            val appDir = getExternalFilesDir(null) ?: filesDir
+            val weightDir = File(appDir, "katago/weights")
             TLogger.i("App", "Weight dir: ${weightDir.absolutePath}, exists=${weightDir.exists()}")
             if (weightDir.exists()) {
                 val contents = weightDir.list()
@@ -98,7 +99,8 @@ class TmasterApp : Application() {
         Thread {
             try {
                 TLogger.i("App", "Pre-extracting weights (background)...")
-                val weightDir = File(filesDir, "katago/weights")
+                val appDir = getExternalFilesDir(null) ?: filesDir
+                val weightDir = File(appDir, "katago/weights")
                 if (!weightDir.exists()) weightDir.mkdirs()
                 val contents = weightDir.list()
                 if (contents == null || contents.isEmpty()) {

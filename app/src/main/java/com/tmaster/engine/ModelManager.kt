@@ -13,7 +13,9 @@ import java.util.zip.GZIPInputStream
 
 class ModelManager(private val context: Context) {
     private val logger = ModuleLogger("Model")
-    private val weightDir = File(context.filesDir, "katago/weights").also { it.mkdirs() }
+    private val weightDir = File(
+        context.getExternalFilesDir(null) ?: context.filesDir, "katago/weights"
+    ).also { it.mkdirs() }
 
     data class ModelInfo(val id: String, val name: String)
     private val _currentModel = MutableStateFlow<ModelInfo?>(null)
