@@ -39,16 +39,8 @@ class KataGoSdkEngine(
         logSync("I", "weightDir=$weightDir")
         logSync("I", "configPath=$configPath")
 
-        // Step 0: 初始化 SDK
-        try {
-            logSync("I", "Ikatagosdk._init()...")
-            Ikatagosdk._init()
-            logSync("I", "Ikatagosdk._init() OK")
-        } catch (e: Exception) {
-            logSync("W", "Ikatagosdk._init() failed (may be optional): ${e.message}")
-        }
-
         // Step 1: Create Client — 必须用工厂方法，不能用构造函数
+        // Go 的 _init() 在 System.loadLibrary 时已自动调用，手动再调会 SIGSEGV
         // native 层没有 Client 构造函数的 JNI 符号
         // 直接构造会导致 native peer 为 null，调用方法时 SIGSEGV
         val client = try {
