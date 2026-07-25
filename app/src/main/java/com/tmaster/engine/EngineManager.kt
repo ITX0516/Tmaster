@@ -70,6 +70,19 @@ object EngineManager {
         return eng.generateMove(state)
     }
 
+    /** 调整 AI 强度 (maxVisits) */
+    fun setAiStrength(strength: String) {
+        val (maxVisits, numThreads) = when (strength) {
+            "weak" -> 50 to 2
+            "normal" -> 300 to 4
+            "strong" -> 1200 to 6
+            else -> 300 to 4
+        }
+        (engine as? KataGoSdkEngine)?.setParam("maxVisits", maxVisits.toString())
+        (engine as? KataGoSdkEngine)?.setParam("numSearchThreads", numThreads.toString())
+        logger.i("AI strength set to $strength (maxVisits=$maxVisits, threads=$numThreads)")
+    }
+
     /** 销毁引擎 — App 退出时调用。 */
     suspend fun shutdown() {
         engine?.dispose()

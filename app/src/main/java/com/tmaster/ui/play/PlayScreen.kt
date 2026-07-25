@@ -31,8 +31,37 @@ fun PlayScreen(
     val aiThinking by viewModel.aiThinking.collectAsState()
     val message by viewModel.message.collectAsState()
     val engineError by viewModel.engineError.collectAsState()
+    val showNewGameDialog by viewModel.showNewGameDialog.collectAsState()
+    val gameResult by viewModel.gameResult.collectAsState()
     var showLog by remember { mutableStateOf(false) }
     val logs by LogCollector.lines.collectAsState()
+
+    // 新对局对话框
+    if (showNewGameDialog) {
+        NewGameDialog(
+            onDismiss = { viewModel.dismissNewGameDialog() },
+            onConfirm = { config -> viewModel.startNewGame(config) },
+        )
+    }
+
+    // 对局结束结果对话框
+    gameResult?.let { result ->
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("对局结束") },
+            text = { Text("结果: $result") },
+            confirmButton = {
+                Button(onClick = { viewModel.openNewGameDialog() }) {
+                    Text("再来一局")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissNewGameDialog() }) {
+                    Text("关闭")
+                }
+            },
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // 顶部状态栏 — 始终可见

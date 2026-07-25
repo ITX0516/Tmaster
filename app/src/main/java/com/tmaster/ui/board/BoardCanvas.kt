@@ -83,6 +83,8 @@ private fun DrawScope.drawStarPoints(
 ) {
     val starPositions = when (boardSize) {
         19 -> listOf(3 to 3, 3 to 9, 3 to 15, 9 to 3, 9 to 9, 9 to 15, 15 to 3, 15 to 9, 15 to 15)
+        13 -> listOf(3 to 3, 3 to 9, 6 to 6, 9 to 3, 9 to 9)
+        9 -> listOf(2 to 2, 2 to 6, 4 to 4, 6 to 2, 6 to 6)
         else -> emptyList()
     }
     for ((x, y) in starPositions) {

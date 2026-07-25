@@ -149,6 +149,16 @@ class KataGoSdkEngine(
         try { sendGtp("kata-stop") } catch (_: Exception) {}
     }
 
+    /** 动态设置搜索参数 (如 maxVisits) */
+    fun setParam(key: String, value: String) {
+        try {
+            sendGtp("kata-set-param $key $value")
+            logSync("I", "setParam $key=$value")
+        } catch (e: Exception) {
+            logSync("W", "setParam $key failed: ${e.message}")
+        }
+    }
+
     override suspend fun dispose() {
         try { runner?.stop() } catch (_: Exception) {}
         runner = null
