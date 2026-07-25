@@ -19,33 +19,23 @@ object NativeLoader {
         loadError?.let { throw it }
 
         try {
-            Log.i(TAG, "Step 1: Loading libkatago.so...")
-            try {
-                System.loadLibrary("katago")
-                Log.i(TAG, "libkatago.so loaded successfully")
-            } catch (e: UnsatisfiedLinkError) {
-                Log.w(TAG, "libkatago.so loading failed (may be auto-loaded by gojni): ${e.message}")
-            }
-
-            Log.i(TAG, "Step 2: Loading libgojni.so...")
+            Log.i(TAG, "Loading libgojni.so...")
             System.loadLibrary("gojni")
             Log.i(TAG, "libgojni.so loaded successfully")
-
             loaded = true
-            Log.i(TAG, "All native libraries loaded")
         } catch (e: UnsatisfiedLinkError) {
-            Log.e(TAG, "Failed to load native library: ${e.message}", e)
+            Log.e(TAG, "Failed to load libgojni.so: ${e.message}", e)
             loadError = e
             try {
-                FileLogger.e(TAG, "Failed to load native library: ${e.message}", e)
+                FileLogger.e(TAG, "Failed to load libgojni.so: ${e.message}", e)
                 FileLogger.flush()
             } catch (_: Exception) {}
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error loading native library: ${e.message}", e)
+            Log.e(TAG, "Unexpected error loading libgojni.so: ${e.message}", e)
             loadError = e
             try {
-                FileLogger.e(TAG, "Unexpected error loading native library: ${e.message}", e)
+                FileLogger.e(TAG, "Unexpected error loading libgojni.so: ${e.message}", e)
                 FileLogger.flush()
             } catch (_: Exception) {}
             throw e

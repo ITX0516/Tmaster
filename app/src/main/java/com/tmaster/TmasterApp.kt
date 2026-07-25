@@ -48,7 +48,6 @@ class TmasterApp : Application() {
             if (extDir != null) {
                 val logDir = File(extDir.parentFile, "log")
                 TLogger.i("App", "Log dir: ${logDir.absolutePath}")
-                TLogger.i("App", "Log file exists: ${File(logDir, "log.txt").exists()}")
             }
             TLogger.i("App", "Internal files dir: ${filesDir.absolutePath}")
         } catch (e: Throwable) {
@@ -58,12 +57,10 @@ class TmasterApp : Application() {
 
         try {
             val weightDir = File(filesDir, "katago/weights")
-            if (!weightDir.exists()) {
-                weightDir.mkdirs()
-                TLogger.i("App", "Created weight dir: ${weightDir.absolutePath}")
-            } else {
-                TLogger.i("App", "Weight dir exists: ${weightDir.absolutePath}")
-                TLogger.i("App", "Weight dir contents: ${weightDir.list()?.joinToString() ?: "empty"}")
+            TLogger.i("App", "Weight dir: ${weightDir.absolutePath}, exists=${weightDir.exists()}")
+            if (weightDir.exists()) {
+                val contents = weightDir.list()
+                TLogger.i("App", "Weight dir contents: ${contents?.joinToString() ?: "empty"}")
             }
         } catch (e: Throwable) {
             TLogger.e("App", "Failed to check weight dir: ${e.message}", e)
@@ -97,39 +94,49 @@ class TmasterApp : Application() {
         }
         FileLogger.flush()
 
-        try {
-            TLogger.i("App", "Pre-extracting weights...")
-            val weightDir = File(filesDir, "katago/weights")
-            if (weightDir.list()?.isEmpty() == true) {
-                TLogger.i("App", "Weight dir is empty, extracting weights now...")
-                val names = listOf("w_42", "w_5f", "w_8z", "cu", "kp", "eo", "mw", "pg", "s4")
-                for (name in names) {
-                    val resId = resources.getIdentifier(name, "raw", packageName)
-                    if (resId != 0) {
-                        try {
-                            resources.openRawResource(resId).use { input ->
-                                java.util.zip.GZIPInputStream(input).use { gz ->
-                                    java.io.FileOutputStream(File(weightDir, name)).use { out ->
-                                        gz.copyTo(out)
+        // 在后台线程预提取权重文件，避免阻塞主线程
+        Thread {
+            try {
+                TLogger.i("App", "Pre-extracting weights (background)...")
+                val weightDir = File(filesDir, "katago/weights")
+                if (!weightDir.exists()) weightDir.mkdirs()
+                val contents = weightDir.list()
+                if (contents == null || contents.isEmpty()) {
+                    TLogger.i("App", "Weight dir is empty, extracting...")
+                    val names = listOf("w_42", "w_5f", "w_8z", "cu", "kp", "eo", "mw", "pg", "s4")
+                    for (name in names) {
+                        val resId = resources.getIdentifier(name, "raw", packageName)
+                        if (resId != 0) {
+                            try {
+                                resources.openRawResource(resId).use { input ->
+                                    java.util.zip.GZIPInputStream(input).use { gz ->
+                                        java.io.FileOutputStream(File(weightDir, name)).use { out ->
+                                            gz.copyTo(out)
+                                        }
                                     }
                                 }
+                                TLogger.i("App", "Extracted weight: $name")
+                            } catch (e: Exception) {
+                                TLogger.e("App", "Failed to extract $name: ${e.message}", e)
                             }
-                            TLogger.i("App", "Extracted weight: $name")
-                        } catch (e: Exception) {
-                            TLogger.e("App", "Failed to extract $name: ${e.message}", e)
+                        } else {
+                            TLogger.w("App", "Resource not found: $name")
                         }
-                    } else {
-                        TLogger.w("App", "Resource not found: $name")
                     }
+                    TLogger.i("App", "Weight extraction complete")
+                } else {
+                    TLogger.i("App", "Weights already exist (${contents.size} files), skipping")
                 }
-                TLogger.i("App", "Weight extraction complete")
-            } else {
-                TLogger.i("App", "Weights already exist, skipping extraction")
+                FileLogger.flush()
+            } catch (e: Throwable) {
+                TLogger.e("App", "Background weight extraction failed: ${e.message}", e)
+                FileLogger.flush()
             }
-        } catch (e: Throwable) {
-            TLogger.e("App", "Failed to extract weights: ${e.message}", e)
+        }.apply {
+            name = "WeightExtractor"
+            isDaemon = true
+            start()
         }
-        FileLogger.flush()
 
         TLogger.i("App", "Application onCreate complete")
         FileLogger.flush()

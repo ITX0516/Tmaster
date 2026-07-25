@@ -25,9 +25,8 @@ object FileLogger {
 
     fun init(context: Context) {
         val extDir = context.getExternalFilesDir(null)
-        val logDir = if (extDir != null) {
-            val parentDir = extDir.parentFile
-            val targetDir = File(parentDir, LOG_DIR_NAME)
+        val logDir = if (extDir != null && extDir.parentFile != null) {
+            val targetDir = File(extDir.parentFile, LOG_DIR_NAME)
             if (!targetDir.exists()) targetDir.mkdirs()
             targetDir
         } else {
@@ -38,7 +37,7 @@ object FileLogger {
         logFile = File(logDir, LOG_FILE_NAME)
         rotateLogs(logDir)
         startWriterThread()
-        writeSyncLine("${formatTime()} [I] FileLogger: Log file initialized: ${logFile?.absolutePath}\n")
+        writeSyncLine("${formatTime()} [I] FileLogger: Log file initialized at ${logFile?.absolutePath}\n")
     }
 
     fun getLogFile(): File? = logFile
