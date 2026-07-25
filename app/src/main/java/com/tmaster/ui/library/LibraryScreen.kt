@@ -107,7 +107,7 @@ fun GameCard(game: GameRecord, onDelete: () -> Unit) {
                     Text(game.result ?: "?", style = MaterialTheme.typography.bodySmall)
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(game.datePlayed, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(game.datePlayed ?: "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("${game.boardSize}x${game.boardSize}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

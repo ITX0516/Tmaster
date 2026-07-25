@@ -10,7 +10,7 @@ import com.tmaster.log.ModuleLogger
 class BoardState private constructor(
     val boardSize: Int,
     val currentPlayer: StoneColor,
-    private val grid: Array<StoneColor?>,
+    internal val grid: Array<StoneColor?>,
     val moveHistory: List<Move>,
     private val previousHashes: Set<Int>,
     val komi: Double = 6.5,
@@ -222,7 +222,7 @@ class BoardState private constructor(
 
     // ── 复制 ─────────────────────────────────────────────────
 
-    private fun copy(
+    internal fun copy(
         result: String? = this.result,
     ): BoardState = BoardState(
         boardSize, currentPlayer, grid.clone(),

@@ -191,7 +191,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
         // 检查连 Pass 结束
         if (state.lastMove?.coord?.isPass == true) {
-            endGameByPass()
+            scoreAndEnd()
             return
         }
 
@@ -335,7 +335,7 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
         viewModelScope.launch {
             try {
-                gameRepo.insert(record)
+                gameRepo.save(record)
                 // 同时保存到 SGF 文件
                 val appDir = getApplication<com.tmaster.TmasterApp>().getExternalFilesDir(null)
                 if (appDir != null) {

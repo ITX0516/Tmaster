@@ -23,9 +23,9 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         .combine(_searchQuery) { list, query ->
             if (query.isBlank()) list
             else list.filter {
-                it.blackPlayer.contains(query, ignoreCase = true) ||
-                it.whitePlayer.contains(query, ignoreCase = true) ||
-                it.result.contains(query, ignoreCase = true)
+                it.blackPlayer?.contains(query, ignoreCase = true) == true ||
+                it.whitePlayer?.contains(query, ignoreCase = true) == true ||
+                it.result?.contains(query, ignoreCase = true) == true
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

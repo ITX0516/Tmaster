@@ -154,7 +154,7 @@ fun PlayScreen(
             onPass = viewModel::onPass,
             onUndo = viewModel::undo,
             onResign = viewModel::resign,
-            onNewGame = viewModel::newGame,
+            onNewGame = viewModel::openNewGameDialog,
         )
     }
 }
