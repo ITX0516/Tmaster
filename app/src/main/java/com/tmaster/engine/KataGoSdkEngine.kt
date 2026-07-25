@@ -4,6 +4,7 @@ import com.tmaster.error.TmasterException
 import com.tmaster.game.BoardState
 import com.tmaster.game.Coord
 import com.tmaster.game.StoneColor
+import com.tmaster.log.FileLogger
 import com.tmaster.log.ModuleLogger
 import ikatagosdk.*
 import kotlinx.coroutines.flow.Flow
@@ -21,73 +22,103 @@ class KataGoSdkEngine(
     private var runner: KatagoRunner? = null
     private var initialized = false
 
+    /** 同步写日志并立即 flush 到文件，确保 native 崩溃前日志已落盘 */
+    private fun logSync(level: String, msg: String) {
+        when (level) {
+            "I" -> logger.i(msg)
+            "E" -> logger.e(msg)
+            "W" -> logger.w(msg)
+            "D" -> logger.d(msg)
+        }
+        FileLogger.flush()
+    }
+
     override suspend fun initialize(boardSize: Int, komi: Double) {
         if (initialized) return
-        logger.i("=== ENGINE INIT ===")
+        logSync("I", "=== ENGINE INIT ===")
+        logSync("I", "weightDir=$weightDir")
+        logSync("I", "configPath=$configPath")
 
-        // Step 1: Create Client (4-arg constructor per AhQ Go decompilation)
+        // Step 0: 初始化 SDK
+        try {
+            logSync("I", "Ikatagosdk._init()...")
+            Ikatagosdk._init()
+            logSync("I", "Ikatagosdk._init() OK")
+        } catch (e: Exception) {
+            logSync("W", "Ikatagosdk._init() failed (may be optional): ${e.message}")
+        }
+
+        // Step 1: Create Client — 必须用工厂方法，不能用构造函数
+        // native 层没有 Client 构造函数的 JNI 符号
+        // 直接构造会导致 native peer 为 null，调用方法时 SIGSEGV
         val client = try {
-            logger.i("creating Client(\"\", \"local\", \"\", \"\")")
-            Client("", "local", "", "")
-        } catch (e: UnsatisfiedLinkError) {
-            logger.e("Client constructor failed: ${e.message}")
-            throw TmasterException.EngineNotFound("JNI Client(): ${e.message}")
+            logSync("I", "Ikatagosdk.newClient()...")
+            val c = Ikatagosdk.newClient()
+            logSync("I", "Client created via newClient()")
+            c
+        } catch (e: Exception) {
+            logSync("E", "newClient() failed: ${e.message}")
+            throw TmasterException.EngineNotFound("newClient(): ${e.message}")
         }
 
         // Step 2: Create runner
         runner = try {
-            logger.i("client.createKatagoRunner()...")
-            client.createKatagoRunner()
-        } catch (e: UnsatisfiedLinkError) {
-            logger.e("createKatagoRunner failed: ${e.message}")
-            throw TmasterException.EngineNotFound("JNI createKatagoRunner: ${e.message}")
+            logSync("I", "client.createKatagoRunner()...")
+            val r = client.createKatagoRunner()
+            logSync("I", "createKatagoRunner() OK")
+            r
+        } catch (e: Exception) {
+            logSync("E", "createKatagoRunner failed: ${e.message}")
+            throw TmasterException.EngineNotFound("createKatagoRunner: ${e.message}")
         }
 
         // Step 3: Configure
         try {
+            logSync("I", "Configuring runner...")
             runner!!.apply {
                 setKataName("KataGo")
-                logger.i("  setName OK")
+                logSync("I", "  setName OK")
                 setKataConfig(configPath)
-                logger.i("  setConfig OK")
+                logSync("I", "  setConfig OK")
                 setKataWeight(weightDir, configPath)
-                logger.i("  setWeight OK")
+                logSync("I", "  setWeight OK")
                 setKataLocalConfig("numSearchThreads", "4")
-                logger.i("  setThreads OK")
+                logSync("I", "  setThreads OK")
                 setRefreshInterval(100)
-                logger.i("  setInterval OK")
+                logSync("I", "  setInterval OK")
             }
-        } catch (e: UnsatisfiedLinkError) {
-            logger.e("Config JNI: ${e.message}")
-            throw TmasterException.EngineNotFound("JNI config: ${e.message}")
+        } catch (e: Exception) {
+            logSync("E", "Config failed: ${e.message}")
+            throw TmasterException.EngineNotFound("config: ${e.message}")
         }
 
         // Step 4: Start engine
         try {
-            logger.i("runner.run()...")
+            logSync("I", "runner.run()...")
             val started = runner!!.run()
-            logger.i("run() = $started")
+            logSync("I", "run() = $started")
             if (!started) throw TmasterException.EngineCrashed(-1, "run()=false")
-        } catch (e: UnsatisfiedLinkError) {
-            logger.e("run() JNI: ${e.message}")
-            throw TmasterException.EngineNotFound("JNI run: ${e.message}")
+        } catch (e: Exception) {
+            logSync("E", "run() failed: ${e.message}")
+            throw TmasterException.EngineNotFound("run: ${e.message}")
         }
 
-        // Step 5: GTP init (commands need newline per decompilation)
+        // Step 5: GTP init
         try {
+            logSync("I", "GTP init...")
             sendGtp("boardsize $boardSize")
             sendGtp("clear_board")
             sendGtp("komi $komi")
             sendGtp("kata-set-rules chinese")
-            logger.i("GTP init OK")
+            logSync("I", "GTP init OK")
         } catch (e: Exception) {
-            logger.e("GTP init failed: ${e.message}")
+            logSync("E", "GTP init failed: ${e.message}")
             throw TmasterException.EngineCrashed(-1, "GTP: ${e.message}")
         }
 
         initialized = true
         isReady = true
-        logger.i("=== ENGINE READY ===")
+        logSync("I", "=== ENGINE READY ===")
     }
 
     override fun analyze(state: BoardState): Flow<KataAnalysisResult> = flow {
